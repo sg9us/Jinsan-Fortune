@@ -2,7 +2,8 @@ import {
   users, type User, type InsertUser,
   bookings, type Booking, type InsertBooking,
   fengShuiScores, type FengShuiScore, type InsertFengShuiScore,
-  chatMessages, type ChatMessage, type InsertChatMessage
+  chatMessages, type ChatMessage, type InsertChatMessage,
+  reviews, type Review, type InsertReview
 } from "@shared/schema";
 
 export interface IStorage {
@@ -23,6 +24,11 @@ export interface IStorage {
   // Chat methods
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessages(): Promise<ChatMessage[]>;
+  
+  // Review methods
+  createReview(review: InsertReview): Promise<Review>;
+  getReviews(): Promise<Review[]>;
+  getReviewById(id: number): Promise<Review | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -30,20 +36,24 @@ export class MemStorage implements IStorage {
   private bookingsStore: Map<number, Booking>;
   private fengShuiScoresStore: Map<number, FengShuiScore>;
   private chatMessagesStore: Map<number, ChatMessage>;
+  private reviewsStore: Map<number, Review>;
   private currentUserId: number;
   private currentBookingId: number;
   private currentFengShuiScoreId: number;
   private currentChatMessageId: number;
+  private currentReviewId: number;
 
   constructor() {
     this.users = new Map();
     this.bookingsStore = new Map();
     this.fengShuiScoresStore = new Map();
     this.chatMessagesStore = new Map();
+    this.reviewsStore = new Map();
     this.currentUserId = 1;
     this.currentBookingId = 1;
     this.currentFengShuiScoreId = 1;
     this.currentChatMessageId = 1;
+    this.currentReviewId = 1;
   }
 
   // User methods
@@ -71,6 +81,7 @@ export class MemStorage implements IStorage {
       ...insertBooking,
       id,
       createdAt: new Date(),
+      comments: insertBooking.comments || null,
     };
     this.bookingsStore.set(id, booking);
     return booking;
@@ -116,6 +127,26 @@ export class MemStorage implements IStorage {
 
   async getChatMessages(): Promise<ChatMessage[]> {
     return Array.from(this.chatMessagesStore.values());
+  }
+  
+  // Review methods
+  async createReview(insertReview: InsertReview): Promise<Review> {
+    const id = this.currentReviewId++;
+    const review: Review = {
+      ...insertReview,
+      id,
+      createdAt: new Date(),
+    };
+    this.reviewsStore.set(id, review);
+    return review;
+  }
+
+  async getReviews(): Promise<Review[]> {
+    return Array.from(this.reviewsStore.values());
+  }
+
+  async getReviewById(id: number): Promise<Review | undefined> {
+    return this.reviewsStore.get(id);
   }
 }
 
