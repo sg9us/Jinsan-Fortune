@@ -13,7 +13,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
   const { language } = useLanguage();
   
   // Date formatting based on language
-  const formattedDate = formatDistanceToNow(new Date(review.createdAt), { 
+  const formattedDate = formatDistanceToNow(new Date(review.createdAt || new Date()), { 
     addSuffix: true,
     locale: language === 'ko' ? ko : undefined 
   });

@@ -14,10 +14,13 @@ export function ReviewsSection() {
   const [showForm, setShowForm] = useState(false);
 
   // Fetch reviews
-  const { data: reviews, isLoading } = useQuery({
+  const { data: reviewsData, isLoading } = useQuery({
     queryKey: ["/api/reviews"],
     enabled: true,
   });
+
+  // Type guard to check if we have review data
+  const reviews = reviewsData as Review[] || [];
 
   return (
     <section className="mb-8">
@@ -45,7 +48,7 @@ export function ReviewsSection() {
         <div className="flex justify-center p-6">
           <p className="text-neutral-500">{t("loading")}</p>
         </div>
-      ) : reviews && reviews.length > 0 ? (
+      ) : reviews.length > 0 ? (
         <>
           {reviews.slice(0, 3).map((review: Review) => (
             <ReviewCard key={review.id} review={review} />

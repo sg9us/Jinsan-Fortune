@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { HeroSection } from "@/assets/HeroSection";
 import { FortunetellerProfile } from "@/components/profile/FortunetellerProfile";
 import { ServiceCard } from "@/components/services/ServiceCard";
+import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Home as HomeIcon, FileSignature, MessageCircle } from "lucide-react";
@@ -80,7 +81,7 @@ export default function Home() {
       </div>
 
       {/* Simple Chat Preview */}
-      <section className="mb-6">
+      <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">
           {t("quickSajuChat")}
         </h2>
@@ -105,6 +106,9 @@ export default function Home() {
           </CardContent>
         </Card>
       </section>
+      
+      {/* Reviews Section */}
+      <ReviewsSection />
     </div>
   );
 }
