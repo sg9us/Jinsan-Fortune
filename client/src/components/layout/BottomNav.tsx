@@ -1,5 +1,4 @@
 import { useLocation } from "wouter";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { 
   Home, 
   MessageCircle, 
@@ -9,17 +8,16 @@ import {
 
 export function BottomNav() {
   const [location, navigate] = useLocation();
-  const { t } = useLanguage();
 
   const isActive = (path: string) => {
     return location === path;
   };
 
   const navItems = [
-    { path: "/", label: t("home"), icon: Home },
-    { path: "/chat", label: t("chat"), icon: MessageCircle },
-    { path: "/fengshui", label: t("fengshui"), icon: Compass },
-    { path: "/booking", label: t("booking"), icon: CalendarDays },
+    { path: "/", label: "홈", icon: Home },
+    { path: "/chat", label: "채팅", icon: MessageCircle },
+    { path: "/fengshui", label: "풍수", icon: Compass },
+    { path: "/booking", label: "예약", icon: CalendarDays },
   ];
 
   return (

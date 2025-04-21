@@ -9,7 +9,6 @@ import { useLocation } from "wouter";
 import { ReviewForm } from "./ReviewForm";
 
 export function ReviewsSection() {
-  const { t } = useLanguage();
   const [_, navigate] = useLocation();
   const [showForm, setShowForm] = useState(false);
 
@@ -25,7 +24,7 @@ export function ReviewsSection() {
   return (
     <section className="mb-8">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">{t("userReviews")}</h2>
+        <h2 className="text-xl font-bold">이용 후기</h2>
         {!showForm && (
           <Button
             variant="outline"
@@ -33,7 +32,7 @@ export function ReviewsSection() {
             onClick={() => setShowForm(true)}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            {t("writeReview")}
+            후기 작성하기
           </Button>
         )}
       </div>
@@ -46,7 +45,7 @@ export function ReviewsSection() {
 
       {isLoading ? (
         <div className="flex justify-center p-6">
-          <p className="text-neutral-500">{t("loading")}</p>
+          <p className="text-neutral-500">로딩 중...</p>
         </div>
       ) : reviews.length > 0 ? (
         <>
@@ -60,21 +59,21 @@ export function ReviewsSection() {
                 onClick={() => navigate("/reviews")}
                 className="text-primary"
               >
-                {t("viewAllReviews")}
+                모든 후기 보기
               </Button>
             </div>
           )}
         </>
       ) : (
         <div className="bg-neutral-50 p-6 rounded-lg text-center">
-          <p className="text-neutral-600 mb-3">{t("noReviewsYet")}</p>
+          <p className="text-neutral-600 mb-3">아직 후기가 없습니다</p>
           {!showForm && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowForm(true)}
             >
-              {t("beTheFirstToReview")}
+              첫 번째 후기를 작성해 보세요
             </Button>
           )}
         </div>
