@@ -11,6 +11,7 @@ import Booking from "@/pages/Booking";
 import Chat from "@/pages/Chat";
 import FengShui from "@/pages/FengShui";
 import Login from "@/pages/Login";
+import MyPage from "@/pages/MyPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/chat" component={Chat} />
       <Route path="/fengshui" component={FengShui} />
       <Route path="/login" component={Login} />
+      <Route path="/mypage" component={MyPage} />
       <Route component={NotFound} />
     </Switch>
   );

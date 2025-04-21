@@ -32,9 +32,7 @@ export function Header() {
   // 로그아웃 처리
   const handleLogout = async () => {
     try {
-      await apiRequest('/auth/logout', {
-        method: 'POST',
-      });
+      await apiRequest('POST', '/auth/logout');
       
       // 인증 상태 갱신
       await refetch();
