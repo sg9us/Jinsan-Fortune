@@ -1,16 +1,22 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// 새로운 사용자 스키마 - OAuth 인증 기반으로 변경
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  provider: text("provider").notNull(), // 'naver' 또는 'kakao'
+  providerId: text("provider_id").notNull().unique(), // 외부 제공자로부터의 고유 ID
+  nickname: text("nickname").notNull(),
+  email: text("email"),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLoginAt: timestamp("last_login_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  lastLoginAt: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

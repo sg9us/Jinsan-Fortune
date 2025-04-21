@@ -5,12 +5,14 @@ import {
   chatMessages, type ChatMessage, type InsertChatMessage,
   reviews, type Review, type InsertReview
 } from "@shared/schema";
+import { randomUUID } from "crypto";
 
 export interface IStorage {
   // User methods
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
+  getUserByProviderId(provider: string, providerId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserLoginTime(id: string): Promise<User | undefined>;
 
   // Booking methods
   createBooking(booking: InsertBooking): Promise<Booking>;
@@ -32,46 +34,58 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User>;
+  private usersStore: Map<string, User>;
   private bookingsStore: Map<number, Booking>;
   private fengShuiScoresStore: Map<number, FengShuiScore>;
   private chatMessagesStore: Map<number, ChatMessage>;
   private reviewsStore: Map<number, Review>;
-  private currentUserId: number;
   private currentBookingId: number;
   private currentFengShuiScoreId: number;
   private currentChatMessageId: number;
   private currentReviewId: number;
 
   constructor() {
-    this.users = new Map();
+    this.usersStore = new Map();
     this.bookingsStore = new Map();
     this.fengShuiScoresStore = new Map();
     this.chatMessagesStore = new Map();
     this.reviewsStore = new Map();
-    this.currentUserId = 1;
     this.currentBookingId = 1;
     this.currentFengShuiScoreId = 1;
     this.currentChatMessageId = 1;
     this.currentReviewId = 1;
   }
 
-  // User methods
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+  // User methods - OAuth 기반으로 구현
+  async getUser(id: string): Promise<User | undefined> {
+    return this.usersStore.get(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+  async getUserByProviderId(provider: string, providerId: string): Promise<User | undefined> {
+    return Array.from(this.usersStore.values()).find(
+      (user) => user.provider === provider && user.providerId === providerId
     );
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    // OAuth 사용자 생성
+    const user: User = {
+      ...insertUser,
+      id: randomUUID(),
+      createdAt: new Date(),
+      lastLoginAt: new Date()
+    };
+    this.usersStore.set(user.id, user);
     return user;
+  }
+
+  async updateUserLoginTime(id: string): Promise<User | undefined> {
+    const user = this.usersStore.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser = { ...user, lastLoginAt: new Date() };
+    this.usersStore.set(id, updatedUser);
+    return updatedUser;
   }
 
   // Booking methods
