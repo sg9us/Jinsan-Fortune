@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBookingSchema, insertChatMessageSchema } from "@shared/schema";
+import { insertBookingSchema, insertChatMessageSchema, insertReviewSchema } from "@shared/schema";
 import { analyzeSaju } from "./services/openai";
 import { analyzeFengShui, createFengShuiScore } from "./services/fengShuiService";
 
@@ -113,6 +113,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating chat message:", error);
       res.status(400).json({ message: error.message || "Invalid message data" });
+    }
+  });
+
+  // Reviews API
+  app.get("/api/reviews", async (req, res) => {
+    try {
+      const reviews = await storage.getReviews();
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error getting reviews:", error);
+      res.status(500).json({ message: "Failed to retrieve reviews" });
+    }
+  });
+
+  app.post("/api/reviews", async (req, res) => {
+    try {
+      const reviewData = insertReviewSchema.parse(req.body);
+      const review = await storage.createReview(reviewData);
+      res.status(201).json(review);
+    } catch (error) {
+      console.error("Error creating review:", error);
+      res.status(400).json({ message: error.message || "Invalid review data" });
+    }
+  });
+
+  app.get("/api/reviews/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid review ID" });
+      }
+      
+      const review = await storage.getReviewById(id);
+      
+      if (!review) {
+        return res.status(404).json({ message: "Review not found" });
+      }
+      
+      res.json(review);
+    } catch (error) {
+      console.error("Error getting review:", error);
+      res.status(500).json({ message: "Failed to retrieve review" });
     }
   });
 

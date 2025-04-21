@@ -120,6 +120,7 @@ export class MemStorage implements IStorage {
       ...insertMessage,
       id,
       createdAt: new Date(),
+      birthdate: insertMessage.birthdate || null,
     };
     this.chatMessagesStore.set(id, message);
     return message;
