@@ -1,10 +1,24 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import passport from "./services/passport";
+import { authConfig } from "./config/auth";
+import { createAuthRouter } from "./services/authRoutes";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// 세션 설정
+app.use(session(authConfig.session));
+
+// Passport 초기화
+app.use(passport.initialize());
+app.use(passport.session());
+
+// 인증 라우터 설정
+app.use('/auth', createAuthRouter());
 
 app.use((req, res, next) => {
   const start = Date.now();

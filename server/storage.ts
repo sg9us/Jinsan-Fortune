@@ -68,13 +68,18 @@ export class MemStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    // OAuth 사용자 생성
+    // 기존 삽입 데이터에서 email을 제외한 필수 필드만 추출
+    const { email, ...essentialFields } = insertUser;
+    
+    // User 객체 생성 (타입에 맞게 각 필드 명시적으로 설정)
     const user: User = {
-      ...insertUser,
+      ...essentialFields,
       id: randomUUID(),
+      email: email === undefined ? null : email,
       createdAt: new Date(),
       lastLoginAt: new Date()
     };
+    
     this.usersStore.set(user.id, user);
     return user;
   }

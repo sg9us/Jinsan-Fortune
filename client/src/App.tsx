@@ -10,6 +10,7 @@ import Home from "@/pages/Home";
 import Booking from "@/pages/Booking";
 import Chat from "@/pages/Chat";
 import FengShui from "@/pages/FengShui";
+import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 
 function Router() {
