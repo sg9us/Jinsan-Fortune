@@ -19,6 +19,20 @@ export const translations: Translations = {
     chat: "채팅",
     fengshui: "풍수",
     booking: "예약",
+    login: "로그인",
+    logout: "로그아웃",
+    myPage: "내 정보",
+    
+    // Auth
+    loginDescription: "카카오나 네이버 계정으로 간편하게 로그인하세요",
+    loginWithNaver: "네이버로 로그인",
+    loginWithKakao: "카카오로 로그인",
+    loginDisclaimer: "로그인 시 이용약관 및 개인정보 처리방침에 동의하게 됩니다",
+    backToHome: "홈으로 돌아가기",
+    loginFailed: "로그인에 실패했습니다. 다시 시도해주세요",
+    unavailableService: "서비스 이용 불가",
+    oauthProviderUnavailable: "현재 이 로그인 서비스를 이용할 수 없습니다",
+    error: "오류",
     
     // Hero section
     heroTitle: "당신의 운명을 알아보세요",

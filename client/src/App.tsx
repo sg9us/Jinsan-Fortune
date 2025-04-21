@@ -20,6 +20,7 @@ function Router() {
       <Route path="/booking" component={Booking} />
       <Route path="/chat" component={Chat} />
       <Route path="/fengshui" component={FengShui} />
+      <Route path="/login" component={Login} />
       <Route component={NotFound} />
     </Switch>
   );

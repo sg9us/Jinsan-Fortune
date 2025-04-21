@@ -10,6 +10,23 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2 } from 'lucide-react';
 
+// 사용자 정보 타입 정의
+interface UserInfo {
+  id: string;
+  nickname: string;
+  provider: string;
+  email: string | null;
+  isAuthenticated: boolean;
+}
+
+// 인증 제공자 상태 타입 정의
+interface ProvidersState {
+  providers: {
+    naver: boolean;
+    kakao: boolean;
+  };
+}
+
 type OAuthProvider = {
   name: string;
   key: 'naver' | 'kakao';
@@ -24,14 +41,31 @@ export default function Login() {
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
 
+  // 기본 사용자 상태 (로그인하지 않은 상태)
+  const defaultUser: UserInfo = {
+    id: '',
+    nickname: '',
+    provider: '',
+    email: null,
+    isAuthenticated: false
+  };
+
+  // 기본 제공자 상태 (모두 비활성화)
+  const defaultProviders: ProvidersState = {
+    providers: {
+      naver: false,
+      kakao: false
+    }
+  };
+
   // 로그인 상태 확인
-  const { data: user, isLoading: isUserLoading } = useQuery({
+  const { data: user = defaultUser, isLoading: isUserLoading } = useQuery<UserInfo>({
     queryKey: ['/auth/me'],
     staleTime: 5 * 60 * 1000, // 5분
   });
 
   // 로그인 제공자 상태 확인
-  const { data: providersData, isLoading: isProvidersLoading } = useQuery({
+  const { data: providersData = defaultProviders, isLoading: isProvidersLoading } = useQuery<ProvidersState>({
     queryKey: ['/auth/providers'],
     staleTime: Infinity, // 한 번만 로드
   });
