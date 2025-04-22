@@ -6,6 +6,17 @@ import passport from "./services/passport";
 import { authConfig } from "./config/auth";
 import { createAuthRouter } from "./services/authRoutes";
 
+// Supabase 환경 변수 초기화
+if (!process.env.SUPABASE_URL && process.env.SUPABASE_URL_saju) {
+  process.env.SUPABASE_URL = process.env.SUPABASE_URL_saju;
+  log('Supabase URL 환경 변수가 설정되었습니다.', 'supabase');
+}
+
+if (!process.env.SUPABASE_API_KEY && process.env.SUPABASE_API_KEY_saju) {
+  process.env.SUPABASE_API_KEY = process.env.SUPABASE_API_KEY_saju;
+  log('Supabase API 키 환경 변수가 설정되었습니다.', 'supabase');
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

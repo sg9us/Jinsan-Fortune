@@ -7,7 +7,9 @@ const supabaseKey = process.env.SUPABASE_API_KEY;
 
 // Supabase 클라이언트 생성
 if (!supabaseUrl || !supabaseKey) {
-  log('Supabase URL 또는 API 키가 제공되지 않았습니다. Supabase 인증이 비활성화됩니다.', 'supabase');
+  log('Supabase URL 또는 API 키가 제공되지 않았습니다. 일부 기능이 비활성화됩니다.', 'supabase');
+} else {
+  log(`Supabase 클라이언트가 초기화되었습니다. (URL: ${supabaseUrl.substring(0, 20)}...)`, 'supabase');
 }
 
 export const supabase = createClient(
