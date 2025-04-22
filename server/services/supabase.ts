@@ -1,21 +1,29 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { log } from '../vite';
 
-// 환경 변수에서 Supabase URL과 API 키 가져오기
+// Get Supabase URL and API key from environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_API_KEY;
 
-// Supabase 클라이언트 생성
+// Log warning if credentials are missing
 if (!supabaseUrl || !supabaseKey) {
-  log('Supabase URL 또는 API 키가 제공되지 않았습니다. Supabase 인증이 비활성화됩니다.', 'supabase');
+  log('Supabase URL or API key not provided. Some features will be disabled.', 'supabase');
 }
 
+// Initialize Supabase client with error handling
 export const supabase = createClient(
-  supabaseUrl || '',
-  supabaseKey || ''
+  supabaseUrl || 'https://placeholder-url.supabase.co',
+  supabaseKey || 'placeholder-key',
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
-// 사용자 유형 정의
+// User type definition
 export interface SupabaseUser {
   id: string;
   provider: string;
@@ -26,93 +34,109 @@ export interface SupabaseUser {
   last_login_at: string;
 }
 
-// Supabase 사용자 서비스
+// User service with error handling
 export const userService = {
-  // 공급자 ID로 사용자 찾기
   async getUserByProviderId(provider: string, providerId: string): Promise<SupabaseUser | null> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('provider', provider)
-      .eq('provider_id', providerId)
-      .single();
-    
-    if (error) {
-      if (error.code !== 'PGRST116') { // 결과를 찾을 수 없음 오류 코드는 무시
-        log(`사용자 조회 오류: ${error.message}`, 'supabase');
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('provider', provider)
+        .eq('provider_id', providerId)
+        .single();
+      
+      if (error) {
+        if (error.code !== 'PGRST116') {
+          log(`User lookup error: ${error.message}`, 'supabase');
+        }
+        return null;
       }
+      
+      return data as SupabaseUser;
+    } catch (err) {
+      log(`Unexpected error in getUserByProviderId: ${err}`, 'supabase');
       return null;
     }
-    
-    return data as SupabaseUser;
   },
   
-  // 사용자 생성
   async createUser(userData: {
     provider: string;
     provider_id: string;
     nickname: string;
     email: string | null;
   }): Promise<SupabaseUser | null> {
-    const now = new Date().toISOString();
-    
-    const { data, error } = await supabase
-      .from('users')
-      .insert([
-        {
-          provider: userData.provider,
-          provider_id: userData.provider_id,
-          nickname: userData.nickname,
-          email: userData.email,
-          created_at: now,
-          last_login_at: now
-        }
-      ])
-      .select()
-      .single();
-    
-    if (error) {
-      log(`사용자 생성 오류: ${error.message}`, 'supabase');
+    try {
+      const now = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('users')
+        .insert([
+          {
+            provider: userData.provider,
+            provider_id: userData.provider_id,
+            nickname: userData.nickname,
+            email: userData.email,
+            created_at: now,
+            last_login_at: now
+          }
+        ])
+        .select()
+        .single();
+      
+      if (error) {
+        log(`User creation error: ${error.message}`, 'supabase');
+        return null;
+      }
+      
+      return data as SupabaseUser;
+    } catch (err) {
+      log(`Unexpected error in createUser: ${err}`, 'supabase');
       return null;
     }
-    
-    return data as SupabaseUser;
   },
   
-  // 마지막 로그인 시간 업데이트
   async updateLastLoginTime(userId: string): Promise<SupabaseUser | null> {
-    const now = new Date().toISOString();
-    
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        last_login_at: now
-      })
-      .eq('id', userId)
-      .select()
-      .single();
-    
-    if (error) {
-      log(`사용자 로그인 시간 업데이트 오류: ${error.message}`, 'supabase');
+    try {
+      const now = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          last_login_at: now
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+      
+      if (error) {
+        log(`Login time update error: ${error.message}`, 'supabase');
+        return null;
+      }
+      
+      return data as SupabaseUser;
+    } catch (err) {
+      log(`Unexpected error in updateLastLoginTime: ${err}`, 'supabase');
       return null;
     }
-    
-    return data as SupabaseUser;
   },
   
-  // ID로 사용자 얻기
   async getUserById(userId: string): Promise<SupabaseUser | null> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (error) {
-      log(`사용자 조회 오류: ${error.message}`, 'supabase');
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        log(`User lookup error: ${error.message}`, 'supabase');
+        return null;
+      }
+      
+      return data as SupabaseUser;
+    } catch (err) {
+      log(`Unexpected error in getUserById: ${err}`, 'supabase');
       return null;
     }
-    
-    return data as SupabaseUser;
   }
 };
