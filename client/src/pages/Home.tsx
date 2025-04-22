@@ -3,7 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { HeroSection } from "@/assets/HeroSection";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { Button } from "@/components/ui/button";
-import { Home as HomeIcon, FileSignature } from "lucide-react";
+import { Home as HomeIcon, FileSignature, Scroll } from "lucide-react";
 
 export default function Home() {
   const { t } = useLanguage();
@@ -16,6 +16,13 @@ export default function Home() {
       description: "주소 기반 풍수 환경 분석",
       path: "/fengshui",
       color: "hsl(var(--secondary))"
+    },
+    {
+      icon: Scroll,
+      title: "사주 팔자",
+      description: "생년월일 기반 사주 분석",
+      path: "/saju",
+      color: "hsl(352, 75%, 60%)"
     },
     {
       icon: FileSignature,
@@ -55,7 +62,7 @@ export default function Home() {
           서비스
         </h2>
         
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {services.map((service, index) => (
             <div 
               key={index} 

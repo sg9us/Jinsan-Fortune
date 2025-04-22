@@ -12,6 +12,7 @@ import Chat from "@/pages/Chat";
 import FengShui from "@/pages/FengShui";
 import Login from "@/pages/Login";
 import MyPage from "@/pages/MyPage";
+import Saju from "@/pages/Saju";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       {/* 사주 채팅 기능 임시 비활성화 */}
       {/* <Route path="/chat" component={Chat} /> */}
       <Route path="/fengshui" component={FengShui} />
+      <Route path="/saju" component={Saju} />
       <Route path="/login" component={Login} />
       <Route path="/mypage" component={MyPage} />
       <Route component={NotFound} />

@@ -2,7 +2,8 @@ import { useLocation } from "wouter";
 import { 
   Home, 
   Compass, 
-  CalendarDays 
+  CalendarDays,
+  Scroll
 } from "lucide-react";
 
 export function BottomNav() {
@@ -15,6 +16,7 @@ export function BottomNav() {
   const navItems = [
     { path: "/", label: "홈", icon: Home },
     { path: "/fengshui", label: "풍수", icon: Compass },
+    { path: "/saju", label: "사주", icon: Scroll },
     { path: "/booking", label: "예약", icon: CalendarDays },
   ];
 
@@ -24,7 +26,7 @@ export function BottomNav() {
         <button
           key={item.path}
           onClick={() => navigate(item.path)}
-          className={`flex flex-col items-center w-1/3 ${
+          className={`flex flex-col items-center w-1/4 ${
             isActive(item.path) ? "text-primary" : "text-neutral-400"
           }`}
         >
