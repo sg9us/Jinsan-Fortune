@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import passport from './passport';
 import { authConfig, successRedirect, failureRedirect } from '../config/auth';
-import { User } from '@shared/schema';
+import { SupabaseUser } from './supabase';
 import { log } from '../vite';
 
 // 인증 확인 미들웨어
@@ -18,7 +18,7 @@ export const isAuthenticated = (req: Request, res: Response, next: Function) => 
 };
 
 // 사용자 정보 가공
-const formatUserInfo = (user: User) => {
+const formatUserInfo = (user: SupabaseUser) => {
   return {
     id: user.id,
     nickname: user.nickname,
@@ -104,7 +104,7 @@ export const createAuthRouter = () => {
       return res.json({ isAuthenticated: false });
     }
     
-    res.json(formatUserInfo(req.user as User));
+    res.json(formatUserInfo(req.user as SupabaseUser));
   });
 
   // 로그아웃

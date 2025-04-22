@@ -2,19 +2,18 @@ import passport from 'passport';
 import { Strategy as NaverStrategy } from 'passport-naver';
 import { Strategy as KakaoStrategy } from 'passport-kakao';
 import { authConfig } from '../config/auth';
-import { storage } from '../storage';
-import { User } from '@shared/schema';
+import { userService, SupabaseUser } from './supabase';
 import { log } from '../vite';
 
 // 유저 직렬화 - 세션에 저장될 정보 정의
-passport.serializeUser((user: any, done) => {
+passport.serializeUser((user: SupabaseUser, done) => {
   done(null, user.id);
 });
 
 // 유저 역직렬화 - 세션에서 사용자 정보 복원
 passport.deserializeUser(async (id: string, done) => {
   try {
-    const user = await storage.getUser(id);
+    const user = await userService.getUserById(id);
     done(null, user || false);
   } catch (err) {
     done(err, false);
@@ -33,18 +32,18 @@ if (authConfig.naver.clientID && authConfig.naver.clientSecret) {
       async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
           // 이미 가입한 사용자인지 확인
-          const existingUser = await storage.getUserByProviderId('naver', profile.id);
+          const existingUser = await userService.getUserByProviderId('naver', profile.id);
           
           if (existingUser) {
             // 기존 사용자인 경우 로그인 시간 업데이트
-            const updatedUser = await storage.updateUserLoginTime(existingUser.id);
+            const updatedUser = await userService.updateLastLoginTime(existingUser.id);
             return done(null, updatedUser);
           }
           
           // 새 사용자 생성
-          const newUser = await storage.createUser({
+          const newUser = await userService.createUser({
             provider: 'naver',
-            providerId: profile.id,
+            provider_id: profile.id,
             nickname: profile.displayName || '사용자',
             email: profile.emails?.[0]?.value || null
           });
@@ -73,18 +72,18 @@ if (authConfig.kakao.clientID && authConfig.kakao.clientSecret) {
       async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
           // 이미 가입한 사용자인지 확인
-          const existingUser = await storage.getUserByProviderId('kakao', profile.id);
+          const existingUser = await userService.getUserByProviderId('kakao', profile.id);
           
           if (existingUser) {
             // 기존 사용자인 경우 로그인 시간 업데이트
-            const updatedUser = await storage.updateUserLoginTime(existingUser.id);
+            const updatedUser = await userService.updateLastLoginTime(existingUser.id);
             return done(null, updatedUser);
           }
           
           // 새 사용자 생성
-          const newUser = await storage.createUser({
+          const newUser = await userService.createUser({
             provider: 'kakao',
-            providerId: profile.id,
+            provider_id: profile.id,
             nickname: profile.displayName || '사용자',
             email: profile._json?.kakao_account?.email || null
           });
