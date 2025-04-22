@@ -12,7 +12,10 @@ interface UserInfo {
   id: string;
   nickname: string;
   provider: string;
+  provider_id: string;
   email: string | null;
+  created_at: string;
+  last_login_at: string;
   isAuthenticated: boolean;
 }
 
@@ -105,7 +108,22 @@ export default function MyPage() {
             
             <div className="flex items-center gap-2 text-sm">
               <Calendar className="w-4 h-4 text-muted-foreground" />
-              <span>최초 가입일: 2023년 5월 15일</span>
+              <span>최초 가입일: {new Date(user.created_at).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}</span>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <span>마지막 로그인: {new Date(user.last_login_at).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</span>
             </div>
           </div>
         </CardContent>

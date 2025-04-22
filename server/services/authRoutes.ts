@@ -23,7 +23,10 @@ const formatUserInfo = (user: SupabaseUser) => {
     id: user.id,
     nickname: user.nickname,
     provider: user.provider,
+    provider_id: user.provider_id,
     email: user.email,
+    created_at: user.created_at,
+    last_login_at: user.last_login_at,
     isAuthenticated: true
   };
 };

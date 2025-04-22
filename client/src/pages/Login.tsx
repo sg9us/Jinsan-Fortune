@@ -15,7 +15,10 @@ interface UserInfo {
   id: string;
   nickname: string;
   provider: string;
+  provider_id: string;
   email: string | null;
+  created_at: string;
+  last_login_at: string;
   isAuthenticated: boolean;
 }
 
@@ -46,7 +49,10 @@ export default function Login() {
     id: '',
     nickname: '',
     provider: '',
+    provider_id: '',
     email: null,
+    created_at: new Date().toISOString(),
+    last_login_at: new Date().toISOString(),
     isAuthenticated: false
   };
 

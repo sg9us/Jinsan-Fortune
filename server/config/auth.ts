@@ -36,6 +36,9 @@ export interface UserSession {
   id: string;
   nickname: string;
   provider: string;
-  providerId: string;
+  provider_id: string;
+  email: string | null;
+  created_at: string;
+  last_login_at: string;
   isAuthenticated: boolean;
 }
