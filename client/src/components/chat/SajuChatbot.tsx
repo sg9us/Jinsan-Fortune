@@ -54,11 +54,24 @@ export function SajuChatbot() {
       });
       return response.json();
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      const errorMessage = language === 'ko'
+        ? '분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
+        : 'An error occurred during analysis. Please try again later.';
+      
       toast({
-        title: error.message,
+        title: errorMessage,
+        description: error.message,
         variant: "destructive",
       });
+      
+      // 오류 발생 시에도 사용자에게 피드백 추가
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: language === 'ko'
+          ? '죄송합니다. 현재 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도하시거나, 전문가 상담을 예약해보세요.'
+          : 'Sorry, there is a temporary issue with the service. Please try again later or book a consultation with an expert.'
+      }]);
     }
   });
 
@@ -127,9 +140,13 @@ export function SajuChatbot() {
             }`}
           >
             {message.content.split('\n\n').map((paragraph, i) => (
-              <p key={i} className={i > 0 ? "mt-2" : ""}>
-                {paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
-              </p>
+              <p 
+                key={i} 
+                className={i > 0 ? "mt-2" : ""}
+                dangerouslySetInnerHTML={{ 
+                  __html: paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                }}
+              />
             ))}
           </div>
         ))}

@@ -40,9 +40,21 @@ export async function analyzeSaju(birthdate: string, language: string): Promise<
       relationships: result.relationships || (isKorean ? "분석할 수 없습니다." : "Unable to analyze."),
       advice: result.advice || (isKorean ? "분석할 수 없습니다." : "Unable to analyze.")
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error analyzing Saju:", error);
     const isKorean = language === 'ko';
+    
+    // OpenAI API 할당량 초과 오류 검사
+    if (error?.error?.type === 'insufficient_quota' || error?.code === 'insufficient_quota') {
+      return {
+        basic: isKorean ? "API 할당량 초과: 서비스를 일시적으로 사용할 수 없습니다." : "API quota exceeded: Service temporarily unavailable.",
+        yearly: isKorean ? "잠시 후 다시 시도해주세요." : "Please try again later.",
+        relationships: isKorean ? "현재 시스템 점검 중입니다." : "System maintenance in progress.",
+        advice: isKorean ? "전문 상담사 예약으로 정확한 사주 분석을 받아보세요." : "Book a professional consultation for accurate Saju analysis."
+      };
+    }
+    
+    // 일반 오류
     return {
       basic: isKorean ? "분석 중 오류가 발생했습니다." : "Error during analysis.",
       yearly: isKorean ? "분석 중 오류가 발생했습니다." : "Error during analysis.",
