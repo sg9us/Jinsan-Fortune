@@ -3,20 +3,13 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { HeroSection } from "@/assets/HeroSection";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { Button } from "@/components/ui/button";
-import { User, Home as HomeIcon, FileSignature, MessageCircle } from "lucide-react";
+import { Home as HomeIcon, FileSignature } from "lucide-react";
 
 export default function Home() {
   const { t } = useLanguage();
   const [_, navigate] = useLocation();
 
   const services = [
-    {
-      icon: User,
-      title: "사주 상담",
-      description: "생년월일을 통한 운세 분석",
-      path: "/chat",
-      color: "hsl(var(--primary))"
-    },
     {
       icon: HomeIcon,
       title: "풍수 점수 확인",
@@ -62,7 +55,7 @@ export default function Home() {
           서비스
         </h2>
         
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {services.map((service, index) => (
             <div 
               key={index} 
@@ -82,15 +75,7 @@ export default function Home() {
       {/* Reviews Section */}
       <ReviewsSection />
 
-      {/* Floating Chat Button */}
-      <div className="fixed bottom-20 right-4 z-10">
-        <Button 
-          className="rounded-full h-14 w-14 shadow-lg"
-          onClick={() => navigate("/chat")}
-        >
-          <MessageCircle className="h-6 w-6" />
-        </Button>
-      </div>
+      {/* 채팅 버튼 비활성화 */}
     </div>
   );
 }

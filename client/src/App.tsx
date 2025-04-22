@@ -19,7 +19,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/booking" component={Booking} />
-      <Route path="/chat" component={Chat} />
+      {/* 사주 채팅 기능 임시 비활성화 */}
+      {/* <Route path="/chat" component={Chat} /> */}
       <Route path="/fengshui" component={FengShui} />
       <Route path="/login" component={Login} />
       <Route path="/mypage" component={MyPage} />

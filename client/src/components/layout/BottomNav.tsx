@@ -1,7 +1,6 @@
 import { useLocation } from "wouter";
 import { 
   Home, 
-  MessageCircle, 
   Compass, 
   CalendarDays 
 } from "lucide-react";
@@ -15,7 +14,6 @@ export function BottomNav() {
 
   const navItems = [
     { path: "/", label: "홈", icon: Home },
-    { path: "/chat", label: "채팅", icon: MessageCircle },
     { path: "/fengshui", label: "풍수", icon: Compass },
     { path: "/booking", label: "예약", icon: CalendarDays },
   ];
@@ -26,7 +24,7 @@ export function BottomNav() {
         <button
           key={item.path}
           onClick={() => navigate(item.path)}
-          className={`flex flex-col items-center w-1/4 ${
+          className={`flex flex-col items-center w-1/3 ${
             isActive(item.path) ? "text-primary" : "text-neutral-400"
           }`}
         >
