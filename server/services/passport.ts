@@ -56,32 +56,32 @@ if (authConfig.naver.clientID && authConfig.naver.clientSecret) {
           // 새 사용자 생성 (자동 회원가입)
           log(`새 네이버 사용자 자동 등록 시도: ${profile.displayName || '이름 없음'} (네이버 ID: ${profile.id})`, 'passport');
           
+          // 프로필에서 필요한 정보 추출
+          let displayName = '';
+          if (profile.displayName && profile.displayName.trim() !== '') {
+            displayName = profile.displayName;
+          } else if (profile._json && profile._json.nickname) {
+            displayName = profile._json.nickname;
+          } else {
+            displayName = '네이버 사용자';
+          }
+          
+          // 이메일 정보 추출
+          let email = null;
+          if (profile.emails && profile.emails.length > 0 && profile.emails[0].value) {
+            email = profile.emails[0].value;
+          } else if (profile._json && profile._json.email) {
+            email = profile._json.email;
+          }
+          
+          const userData = {
+            provider: 'naver',
+            provider_id: profile.id,
+            nickname: displayName,
+            email: email
+          };
+          
           try {
-            // 프로필에서 필요한 정보 추출
-            let displayName = '';
-            if (profile.displayName && profile.displayName.trim() !== '') {
-              displayName = profile.displayName;
-            } else if (profile._json && profile._json.nickname) {
-              displayName = profile._json.nickname;
-            } else {
-              displayName = '네이버 사용자';
-            }
-            
-            // 이메일 정보 추출
-            let email = null;
-            if (profile.emails && profile.emails.length > 0 && profile.emails[0].value) {
-              email = profile.emails[0].value;
-            } else if (profile._json && profile._json.email) {
-              email = profile._json.email;
-            }
-            
-            const userData = {
-              provider: 'naver',
-              provider_id: profile.id,
-              nickname: displayName,
-              email: email
-            };
-            
             const newUser = await userService.createUser(userData);
             
             if (!newUser) {
@@ -148,30 +148,30 @@ if (authConfig.kakao.clientID && authConfig.kakao.clientSecret) {
           // 새 사용자 생성 (자동 회원가입)
           log(`새 카카오 사용자 자동 등록 시도: ${profile.displayName || '이름 없음'} (카카오 ID: ${profile.id})`, 'passport');
           
+          // 프로필에서 필요한 정보 추출
+          let displayName = '';
+          if (profile.displayName && profile.displayName.trim() !== '') {
+            displayName = profile.displayName;
+          } else if (profile._json?.properties?.nickname) {
+            displayName = profile._json.properties.nickname;
+          } else {
+            displayName = '카카오 사용자';
+          }
+          
+          // 이메일 정보 추출
+          let email = null;
+          if (profile._json?.kakao_account?.email) {
+            email = profile._json.kakao_account.email;
+          }
+          
+          const userData = {
+            provider: 'kakao',
+            provider_id: profile.id,
+            nickname: displayName,
+            email: email
+          };
+          
           try {
-            // 프로필에서 필요한 정보 추출
-            let displayName = '';
-            if (profile.displayName && profile.displayName.trim() !== '') {
-              displayName = profile.displayName;
-            } else if (profile._json?.properties?.nickname) {
-              displayName = profile._json.properties.nickname;
-            } else {
-              displayName = '카카오 사용자';
-            }
-            
-            // 이메일 정보 추출
-            let email = null;
-            if (profile._json?.kakao_account?.email) {
-              email = profile._json.kakao_account.email;
-            }
-            
-            const userData = {
-              provider: 'kakao',
-              provider_id: profile.id,
-              nickname: displayName,
-              email: email
-            };
-            
             const newUser = await userService.createUser(userData);
             
             if (!newUser) {
