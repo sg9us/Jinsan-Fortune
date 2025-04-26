@@ -20,6 +20,7 @@ interface UserInfo {
   created_at: string;
   last_login_at: string;
   isAuthenticated: boolean;
+  isAdmin?: boolean;
 }
 
 // 인증 제공자 상태 타입 정의

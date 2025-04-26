@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import passport from './passport';
 import { authConfig, successRedirect, failureRedirect } from '../config/auth';
-import { SupabaseUser, supabase } from './supabase';
+import { SupabaseUser, supabase, userService } from './supabase';
 import { log } from '../vite';
 
 // 인증 확인 미들웨어

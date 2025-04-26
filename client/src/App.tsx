@@ -11,6 +11,8 @@ import Booking from "@/pages/Booking";
 import Chat from "@/pages/Chat";
 import FengShui from "@/pages/FengShui";
 import Login from "@/pages/Login";
+import EmailLogin from "@/pages/EmailLogin";
+import EmailSignup from "@/pages/EmailSignup";
 import Register from "@/pages/Register";
 import MyPage from "@/pages/MyPage";
 import Saju from "@/pages/Saju";
@@ -26,6 +28,8 @@ function Router() {
       <Route path="/fengshui" component={FengShui} />
       <Route path="/saju" component={Saju} />
       <Route path="/login" component={Login} />
+      <Route path="/email-login" component={EmailLogin} />
+      <Route path="/email-signup" component={EmailSignup} />
       <Route path="/register" component={Register} />
       <Route path="/mypage" component={MyPage} />
       <Route component={NotFound} />
