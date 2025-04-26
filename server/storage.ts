@@ -30,7 +30,10 @@ export interface IStorage {
   // Review methods
   createReview(review: InsertReview): Promise<Review>;
   getReviews(): Promise<Review[]>;
-  getReviewById(id: number): Promise<Review | undefined>;
+  getReviewById(id: string): Promise<Review | undefined>;
+  updateReview(id: string, updatedData: Partial<InsertReview>): Promise<Review | undefined>;
+  deleteReview(id: string): Promise<boolean>;
+  getReviewsByUserId(userId: string): Promise<Review[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -38,11 +41,10 @@ export class MemStorage implements IStorage {
   private bookingsStore: Map<number, Booking>;
   private fengShuiScoresStore: Map<number, FengShuiScore>;
   private chatMessagesStore: Map<number, ChatMessage>;
-  private reviewsStore: Map<number, Review>;
+  private reviewsStore: Map<string, Review>;
   private currentBookingId: number;
   private currentFengShuiScoreId: number;
   private currentChatMessageId: number;
-  private currentReviewId: number;
 
   constructor() {
     this.usersStore = new Map();
@@ -53,7 +55,6 @@ export class MemStorage implements IStorage {
     this.currentBookingId = 1;
     this.currentFengShuiScoreId = 1;
     this.currentChatMessageId = 1;
-    this.currentReviewId = 1;
   }
 
   // User methods - OAuth 기반으로 구현
@@ -63,7 +64,7 @@ export class MemStorage implements IStorage {
 
   async getUserByProviderId(provider: string, providerId: string): Promise<User | undefined> {
     return Array.from(this.usersStore.values()).find(
-      (user) => user.provider === provider && user.providerId === providerId
+      (user) => user.provider === provider && user.provider_id === providerId
     );
   }
 
@@ -151,22 +152,65 @@ export class MemStorage implements IStorage {
   
   // Review methods
   async createReview(insertReview: InsertReview): Promise<Review> {
-    const id = this.currentReviewId++;
+    const id = randomUUID();
+    const now = new Date();
     const review: Review = {
       ...insertReview,
       id,
-      createdAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
+      isDeleted: false,
     };
     this.reviewsStore.set(id, review);
     return review;
   }
 
   async getReviews(): Promise<Review[]> {
-    return Array.from(this.reviewsStore.values());
+    return Array.from(this.reviewsStore.values())
+      .filter(review => !review.isDeleted);
   }
 
-  async getReviewById(id: number): Promise<Review | undefined> {
-    return this.reviewsStore.get(id);
+  async getReviewById(id: string): Promise<Review | undefined> {
+    const review = this.reviewsStore.get(id);
+    if (review && !review.isDeleted) {
+      return review;
+    }
+    return undefined;
+  }
+  
+  async updateReview(id: string, updatedData: Partial<InsertReview>): Promise<Review | undefined> {
+    const review = this.reviewsStore.get(id);
+    if (!review || review.isDeleted) {
+      return undefined;
+    }
+    
+    const updatedReview: Review = {
+      ...review,
+      ...updatedData,
+      updatedAt: new Date(),
+    };
+    this.reviewsStore.set(id, updatedReview);
+    return updatedReview;
+  }
+  
+  async deleteReview(id: string): Promise<boolean> {
+    const review = this.reviewsStore.get(id);
+    if (!review) {
+      return false;
+    }
+    
+    const updatedReview: Review = {
+      ...review,
+      isDeleted: true,
+      updatedAt: new Date(),
+    };
+    this.reviewsStore.set(id, updatedReview);
+    return true;
+  }
+  
+  async getReviewsByUserId(userId: string): Promise<Review[]> {
+    return Array.from(this.reviewsStore.values())
+      .filter(review => review.userId === userId && !review.isDeleted);
   }
 }
 

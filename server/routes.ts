@@ -137,34 +137,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reviews API
+  // 리뷰 목록 조회 API
   app.get("/api/reviews", async (req, res) => {
     try {
       const reviews = await storage.getReviews();
       res.json(reviews);
     } catch (error) {
       console.error("Error getting reviews:", error);
-      res.status(500).json({ message: "Failed to retrieve reviews" });
+      res.status(500).json({ message: "리뷰 목록을 가져오는데 실패했습니다" });
+    }
+  });
+  
+  // 사용자별 리뷰 목록 조회 API
+  app.get("/api/reviews/user/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const reviews = await storage.getReviewsByUserId(userId);
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error getting user reviews:", error);
+      res.status(500).json({ message: "사용자 리뷰 목록을 가져오는데 실패했습니다" });
     }
   });
 
   app.post("/api/reviews", async (req, res) => {
     try {
-      const reviewData = insertReviewSchema.parse(req.body);
+      // 로그인 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "로그인이 필요합니다" });
+      }
+      
+      // 사용자 ID 추출
+      const userId = (req.user as any).id;
+      
+      // 리뷰 데이터 검증
+      const reviewData = insertReviewSchema.parse({
+        ...req.body,
+        userId
+      });
+      
       const review = await storage.createReview(reviewData);
       res.status(201).json(review);
     } catch (error) {
       console.error("Error creating review:", error);
-      res.status(400).json({ message: error.message || "Invalid review data" });
+      res.status(400).json({ message: error.message || "잘못된 리뷰 데이터입니다" });
     }
   });
 
   app.get("/api/reviews/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid review ID" });
-      }
-
+      const id = req.params.id;
+      
       const review = await storage.getReviewById(id);
 
       if (!review) {
