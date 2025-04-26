@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface UserInfo {
@@ -28,16 +30,20 @@ export default function Register() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const [, params] = useRoute("/register");
   
   // 사용자 정보 상태
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
   // 폼 입력 상태
   const [fullName, setFullName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [gender, setGender] = useState("");
-  const [birthdate, setBirthdate] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthDay, setBirthDay] = useState("");
+  const [birthTime, setBirthTime] = useState("");
+  const [isTimeUnknown, setIsTimeUnknown] = useState(false);
+  const [ageRange, setAgeRange] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // 사용자 정보 불러오기
@@ -61,7 +67,6 @@ export default function Register() {
             setFullName(data.nickname);
           }
         } else {
-          // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
           navigate("/login");
         }
       } catch (error) {
@@ -82,10 +87,10 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!fullName || !phoneNumber) {
+    if (!fullName || !gender || !birthYear || !birthMonth || !birthDay || !ageRange || !phoneNumber) {
       toast({
         title: "입력 오류",
-        description: "이름과 전화번호는 필수 입력 항목입니다.",
+        description: "필수 입력 항목을 모두 작성해주세요.",
         variant: "destructive",
       });
       return;
@@ -101,9 +106,14 @@ export default function Register() {
         },
         body: JSON.stringify({
           fullName,
+          gender,
+          birthYear,
+          birthMonth,
+          birthDay,
+          birthTime: isTimeUnknown ? null : birthTime,
+          isTimeUnknown,
+          ageRange,
           phoneNumber,
-          gender: gender || null,
-          birthdate: birthdate || null,
         }),
       });
       
@@ -115,7 +125,6 @@ export default function Register() {
           description: "회원가입이 성공적으로 완료되었습니다.",
         });
         
-        // 홈페이지로 리다이렉트
         navigate("/");
       } else {
         toast({
@@ -139,7 +148,6 @@ export default function Register() {
   // 전화번호 입력 형식 처리
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // 숫자만 허용하고 자동으로 하이픈 추가
     const numbersOnly = value.replace(/[^0-9]/g, "");
     
     if (numbersOnly.length <= 11) {
@@ -177,6 +185,104 @@ export default function Register() {
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="gender">성별 <span className="text-red-500">*</span></Label>
+              <Select value={gender} onValueChange={setGender} required>
+                <SelectTrigger id="gender">
+                  <SelectValue placeholder="성별을 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">남성</SelectItem>
+                  <SelectItem value="female">여성</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="birthYear">출생년도 <span className="text-red-500">*</span></Label>
+                <Input
+                  id="birthYear"
+                  type="number"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  placeholder="YYYY"
+                  value={birthYear}
+                  onChange={(e) => setBirthYear(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="birthMonth">월 <span className="text-red-500">*</span></Label>
+                <Input
+                  id="birthMonth"
+                  type="number"
+                  min="1"
+                  max="12"
+                  placeholder="MM"
+                  value={birthMonth}
+                  onChange={(e) => setBirthMonth(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="birthDay">일 <span className="text-red-500">*</span></Label>
+                <Input
+                  id="birthDay"
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="DD"
+                  value={birthDay}
+                  onChange={(e) => setBirthDay(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="birthTime">출생시간</Label>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="timeUnknown"
+                    checked={isTimeUnknown}
+                    onCheckedChange={(checked) => {
+                      setIsTimeUnknown(checked as boolean);
+                      if (checked) {
+                        setBirthTime("");
+                      }
+                    }}
+                  />
+                  <Label htmlFor="timeUnknown" className="text-sm">모름</Label>
+                </div>
+              </div>
+              <Input
+                id="birthTime"
+                type="time"
+                value={birthTime}
+                onChange={(e) => setBirthTime(e.target.value)}
+                disabled={isTimeUnknown}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ageRange">연령대 <span className="text-red-500">*</span></Label>
+              <Select value={ageRange} onValueChange={setAgeRange} required>
+                <SelectTrigger id="ageRange">
+                  <SelectValue placeholder="연령대를 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10-19">10대</SelectItem>
+                  <SelectItem value="20-29">20대</SelectItem>
+                  <SelectItem value="30-39">30대</SelectItem>
+                  <SelectItem value="40-49">40대</SelectItem>
+                  <SelectItem value="50-59">50대</SelectItem>
+                  <SelectItem value="60+">60대 이상</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">전화번호 <span className="text-red-500">*</span></Label>
@@ -189,33 +295,6 @@ export default function Register() {
               />
               <p className="text-xs text-muted-foreground">
                 예약 확인 및 공지에 사용됩니다.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="gender">성별 (선택)</Label>
-              <Select value={gender} onValueChange={setGender}>
-                <SelectTrigger id="gender">
-                  <SelectValue placeholder="성별을 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">남성</SelectItem>
-                  <SelectItem value="female">여성</SelectItem>
-                  <SelectItem value="other">기타</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="birthdate">생년월일 (선택)</Label>
-              <Input
-                id="birthdate"
-                type="date"
-                value={birthdate}
-                onChange={(e) => setBirthdate(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                사주 분석에 활용됩니다. (나중에 입력 가능)
               </p>
             </div>
           </CardContent>

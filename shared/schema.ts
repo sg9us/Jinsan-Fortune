@@ -9,11 +9,16 @@ export const users = pgTable("users", {
   provider_id: text("provider_id").notNull().unique(), // 외부 제공자로부터의 고유 ID
   nickname: text("nickname").notNull(),
   email: text("email"),
-  // 회원가입 추가 필드
+  // 회원가입 필수 필드
   fullName: text("full_name"),          // 실명
   phoneNumber: text("phone_number"),    // 전화번호
-  gender: text("gender"),               // 성별 (선택사항)
-  birthdate: text("birthdate"),         // 생년월일 (선택사항)
+  gender: text("gender").notNull(),     // 성별
+  birthYear: text("birth_year").notNull(), // 출생년도
+  birthMonth: text("birth_month").notNull(), // 출생월
+  birthDay: text("birth_day").notNull(), // 출생일
+  birthTime: text("birth_time"),        // 출생시간 (선택)
+  ageRange: text("age_range").notNull(), // 연령대
+  isTimeUnknown: boolean("is_time_unknown").notNull().default(false), // 출생시간 모름
   isRegistered: boolean("is_registered").notNull().default(false), // 회원가입 완료 여부
   isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
