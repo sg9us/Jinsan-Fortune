@@ -67,10 +67,35 @@ export const createAuthRouter = () => {
     // API 경로 형식의 콜백 추가 (/api/auth/callback/naver)
     router.get(
       '/callback/naver',
-      passport.authenticate('naver', { 
-        successRedirect,
-        failureRedirect
-      })
+      (req, res, next) => {
+        log('네이버 콜백 호출됨 (API 경로): ' + req.originalUrl, 'auth');
+        
+        try {
+          // 콜백 요청 파라미터 로깅
+          log(`네이버 콜백 요청 파라미터: ${JSON.stringify({
+            code: req.query.code ? '존재함' : '없음',
+            error: req.query.error || '없음',
+            state: req.query.state || '없음'
+          })}`, 'auth');
+          
+          passport.authenticate('naver', { 
+            successRedirect,
+            failureRedirect,
+            failWithError: true // 오류 정보 전달
+          })(req, res, (err: any) => {
+            if (err) {
+              log(`네이버 인증 오류 발생: ${err.message || '알 수 없는 오류'}`, 'auth');
+              // 오류 발생 시 실패 페이지로 리다이렉트
+              return res.redirect(failureRedirect);
+            }
+            next();
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          log(`네이버 콜백 처리 중 예외 발생: ${errorMessage}`, 'auth');
+          return res.redirect(failureRedirect);
+        }
+      }
     );
     
     log('네이버 OAuth 콜백 URL: ' + authConfig.naver.callbackURL, 'auth');
@@ -110,10 +135,32 @@ export const createAuthRouter = () => {
       '/callback/kakao',
       (req, res, next) => {
         log('카카오 콜백 호출됨 (API 경로): ' + req.originalUrl, 'auth');
-        passport.authenticate('kakao', { 
-          successRedirect,
-          failureRedirect
-        })(req, res, next);
+        
+        try {
+          // 콜백 요청 파라미터 로깅
+          log(`카카오 콜백 요청 파라미터: ${JSON.stringify({
+            code: req.query.code ? '존재함' : '없음',
+            error: req.query.error || '없음',
+            state: req.query.state || '없음'
+          })}`, 'auth');
+          
+          passport.authenticate('kakao', { 
+            successRedirect,
+            failureRedirect,
+            failWithError: true // 오류 정보 전달
+          })(req, res, (err: any) => {
+            if (err) {
+              log(`카카오 인증 오류 발생: ${err.message || '알 수 없는 오류'}`, 'auth');
+              // 오류 발생 시 실패 페이지로 리다이렉트
+              return res.redirect(failureRedirect);
+            }
+            next();
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          log(`카카오 콜백 처리 중 예외 발생: ${errorMessage}`, 'auth');
+          return res.redirect(failureRedirect);
+        }
       }
     );
     

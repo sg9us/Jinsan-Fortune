@@ -70,8 +70,22 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    log(`서버 오류 발생: ${status} - ${message}`, 'express');
+    
+    if (err.stack) {
+      log(`오류 스택: ${err.stack}`, 'express');
+    }
+    
+    if (err.originalError) {
+      log(`원본 오류: ${JSON.stringify(err.originalError)}`, 'express');
+    }
+    
+    if (status === 500) {
+      // 500 에러는 보안을 위해 자세한 내용을 클라이언트에 노출하지 않음
+      res.status(status).json({ message: "서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요." });
+    } else {
+      res.status(status).json({ message });
+    }
   });
 
   // importantly only setup vite in development and after
