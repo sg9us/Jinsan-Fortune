@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { HeroSection } from "@/assets/HeroSection";
-import { ReviewsSection } from "@/components/reviews/ReviewsSection";
+import { ReviewSection } from "@/components/reviews/ReviewSection";
 import { Button } from "@/components/ui/button";
 import { Home as HomeIcon, FileSignature, Scroll } from "lucide-react";
 
@@ -80,7 +80,7 @@ export default function Home() {
       </section>
       
       {/* Reviews Section */}
-      <ReviewsSection />
+      <ReviewSection />
 
       {/* 채팅 버튼 비활성화 */}
     </div>
