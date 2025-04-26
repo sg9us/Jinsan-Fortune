@@ -297,6 +297,26 @@ export default function Register() {
                 예약 확인 및 공지에 사용됩니다.
               </p>
             </div>
+
+            <div className="space-y-3 border-t pt-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="privacy" required />
+                <Label htmlFor="privacy" className="text-sm">
+                  개인정보 수집 및 이용에 동의합니다 <span className="text-red-500">*</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="marketing" />
+                <Label htmlFor="marketing" className="text-sm">
+                  마케팅 정보 수신에 동의합니다 (선택)
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                수집항목: 이름, 성별, 생년월일, 출생시간, 연령대, 전화번호<br/>
+                수집목적: 사주/운세 상담 서비스 제공, 예약 확인 및 알림<br/>
+                보유기간: 회원 탈퇴 시까지
+              </p>
+            </div>
           </CardContent>
           
           <CardFooter>
