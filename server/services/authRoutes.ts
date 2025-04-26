@@ -25,6 +25,11 @@ const formatUserInfo = (user: SupabaseUser) => {
     provider: user.provider,
     provider_id: user.provider_id,
     email: user.email,
+    fullName: user.full_name,
+    phoneNumber: user.phone_number,
+    gender: user.gender,
+    birthdate: user.birthdate,
+    isRegistered: user.is_registered,
     created_at: user.created_at,
     last_login_at: user.last_login_at,
     isAuthenticated: true

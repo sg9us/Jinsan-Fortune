@@ -83,6 +83,11 @@ export interface SupabaseUser {
   provider_id: string;
   nickname: string;
   email: string | null;
+  full_name?: string | null;
+  phone_number?: string | null;
+  gender?: string | null;
+  birthdate?: string | null;
+  is_registered?: boolean;
   is_admin?: boolean;
   created_at: string;
   last_login_at: string;
