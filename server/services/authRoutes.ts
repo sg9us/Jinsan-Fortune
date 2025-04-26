@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import passport from './passport';
 import { authConfig, successRedirect, failureRedirect } from '../config/auth';
-import { SupabaseUser } from './supabase';
+import { SupabaseUser, supabase } from './supabase';
 import { log } from '../vite';
 
 // 인증 확인 미들웨어
@@ -179,8 +179,17 @@ export const createAuthRouter = () => {
     });
   }
 
-  // 로그인 성공 페이지 - 클라이언트로 리디렉션
+  // 로그인 성공 페이지 - 회원가입 완료 여부에 따라 리디렉션
   router.get('/success', (req, res) => {
+    // 사용자가 로그인되어 있고 회원가입이 필요한 경우 리디렉션
+    if (req.isAuthenticated() && req.user) {
+      const user = req.user as SupabaseUser;
+      if (!user.is_registered) {
+        log(`미등록 사용자 - 회원가입 페이지로 리디렉션: ${user.nickname} (ID: ${user.id})`, 'auth');
+        return res.redirect('/register');
+      }
+    }
+    // 회원가입이 완료되었거나 로그인 정보가 없는 경우 홈으로 리디렉션
     res.redirect('/');
   });
 
@@ -206,6 +215,77 @@ export const createAuthRouter = () => {
       }
       res.json({ message: '로그아웃 되었습니다' });
     });
+  });
+  
+  // 회원가입 완료 (추가 정보 입력)
+  router.post('/register', isAuthenticated, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: '인증되지 않은 사용자입니다.' });
+      }
+      
+      const { fullName, phoneNumber, gender, birthdate } = req.body;
+      
+      // 필수 정보 검증
+      if (!fullName || !phoneNumber) {
+        return res.status(400).json({ 
+          success: false, 
+          message: '이름과 전화번호는 필수 입력 항목입니다.' 
+        });
+      }
+      
+      const user = req.user as SupabaseUser;
+      log(`회원가입 정보 업데이트 시도: ${user.nickname} (ID: ${user.id})`, 'auth');
+      
+      // Supabase 사용자 정보 업데이트
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          full_name: fullName,
+          phone_number: phoneNumber,
+          gender: gender || null,
+          birthdate: birthdate || null,
+          is_registered: true
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+      
+      if (error) {
+        log(`회원가입 정보 업데이트 오류: ${error.message}`, 'auth');
+        return res.status(500).json({ 
+          success: false, 
+          message: '회원정보 저장 중 오류가 발생했습니다.' 
+        });
+      }
+      
+      log(`회원가입 완료: ${fullName} (ID: ${user.id})`, 'auth');
+      
+      // 업데이트된 사용자 정보를 세션에 반영
+      req.login(data, (err) => {
+        if (err) {
+          log(`세션 업데이트 오류: ${err.message}`, 'auth');
+          return res.status(500).json({ 
+            success: false, 
+            message: '세션 업데이트 중 오류가 발생했습니다.' 
+          });
+        }
+        
+        return res.json({ 
+          success: true, 
+          message: '회원가입이 완료되었습니다.',
+          user: formatUserInfo(data)
+        });
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log(`회원가입 처리 중 예외 발생: ${errorMessage}`, 'auth');
+      
+      res.status(500).json({ 
+        success: false, 
+        message: '회원가입 처리 중 오류가 발생했습니다.' 
+      });
+    }
   });
 
   // 활성화된 제공자 로깅
