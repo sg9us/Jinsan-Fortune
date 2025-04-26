@@ -5,7 +5,7 @@ import { log } from '../vite';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_API_KEY;
 
-// 환경 변수 확인
+// 환경 변수 확인 
 if (!supabaseUrl || !supabaseKey) {
   log('Supabase URL 또는 API 키가 제공되지 않았습니다. 일부 기능이 비활성화됩니다.', 'supabase');
   log('환경 변수를 확인하세요. SUPABASE_URL과 SUPABASE_API_KEY가 필요합니다.', 'supabase');
@@ -14,12 +14,19 @@ if (!supabaseUrl || !supabaseKey) {
   log(`Supabase 클라이언트가 초기화되었습니다. (URL: ${supabaseUrl.substring(0, 20)}...)`, 'supabase');
   
   // 키가 service_role 키인지 확인 (간단한 휴리스틱)
-  const isLikelyServiceRole = supabaseKey.includes('eyJ0') && supabaseKey.length > 100;
+  const isLikelyServiceRole = supabaseKey.includes('eyJ') && supabaseKey.length > 100;
   
   if (!isLikelyServiceRole) {
     log('주의: SUPABASE_API_KEY가 service_role 키가 아닌 것 같습니다. RLS 정책을 우회하기 위해 service_role 키가 필요합니다.', 'supabase');
+    // 키의 일부만 로그로 출력 (보안을 위해)
+    if (supabaseKey && supabaseKey.length > 10) {
+      log(`현재 키 접두사: ${supabaseKey.substring(0, 5)}... (길이: ${supabaseKey.length})`, 'supabase');
+    }
+    log('service_role 키는 일반적으로 "eyJ"로 시작하는 긴 문자열입니다', 'supabase');
+    log('Supabase 대시보드 > 설정 > API에서 "service_role secret"을 확인하세요', 'supabase');
   } else {
     log('service_role 키로 Supabase 클라이언트를 초기화합니다. RLS 정책을 우회합니다.', 'supabase');
+    log(`키 접두사: ${supabaseKey.substring(0, 5)}... (길이: ${supabaseKey.length})`, 'supabase');
   }
 }
 
@@ -34,6 +41,40 @@ export const supabase = createClient(
     }
   }
 );
+
+// 초기 테스트 실행 - 권한 확인
+(async () => {
+  try {
+    log('Supabase 연결 및 권한 테스트 중...', 'supabase');
+    
+    // 간단한 쿼리 시도 - users 테이블 접근 가능한지 확인
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .limit(1);
+    
+    if (error) {
+      log(`Supabase 테스트 오류: ${error.message} (코드: ${error.code})`, 'supabase');
+      
+      if (error.code === '401' || error.code === 'PGRST301') {
+        log('401 오류: API 키가 유효하지 않거나 권한이 부족합니다', 'supabase');
+        log('서비스 롤 키(service_role)가 아닌 anon 키나 다른 키를 사용하고 있습니다', 'supabase');
+        log('올바른 service_role 키를 사용하도록 환경 변수를 업데이트하세요', 'supabase');
+      } else if (error.code === '406' || error.code === 'PGRST406') {
+        log('406 오류: RLS 정책이 작업을 차단했습니다', 'supabase');
+        log('테이블에 RLS 정책이 설정되어 있고 service_role 키가 아니어서 우회할 수 없습니다', 'supabase');
+      } else {
+        log('알 수 없는 오류가 발생했습니다. 자세한 정보를 위해 로그를 확인하세요', 'supabase');
+      }
+    } else {
+      log(`Supabase 테스트 성공: users 테이블 접근 가능 (${data ? data.length : 0}개 행 조회됨)`, 'supabase');
+      log('API 키가 올바르게 작동하고 있습니다', 'supabase');
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    log(`Supabase 테스트 중 예외 발생: ${errorMessage}`, 'supabase');
+  }
+})();
 
 // 사용자 유형 정의
 export interface SupabaseUser {
