@@ -56,65 +56,130 @@ export const userService = {
     nickname: string;
     email: string | null;
   }): Promise<SupabaseUser | null> {
-    const now = new Date().toISOString();
-    
-    const { data, error } = await supabase
-      .from('users')
-      .insert([
-        {
-          provider: userData.provider,
-          provider_id: userData.provider_id,
-          nickname: userData.nickname,
-          email: userData.email,
-          created_at: now,
-          last_login_at: now
+    try {
+      // 중복 확인 - provider_id가 동일한 사용자가 있는지 확인
+      const existingUser = await this.getUserByProviderId(userData.provider, userData.provider_id);
+      if (existingUser) {
+        log(`이미 존재하는 사용자입니다: ${userData.provider} / ${userData.provider_id}`, 'supabase');
+        return existingUser;
+      }
+      
+      const now = new Date().toISOString();
+      
+      // 로그 추가
+      log(`새 사용자 생성 시도: ${JSON.stringify({
+        provider: userData.provider,
+        provider_id: userData.provider_id,
+        nickname: userData.nickname,
+        email: userData.email ? userData.email.substring(0, 3) + '...' : null
+      })}`, 'supabase');
+      
+      const { data, error } = await supabase
+        .from('users')
+        .insert([
+          {
+            provider: userData.provider,
+            provider_id: userData.provider_id,
+            nickname: userData.nickname,
+            email: userData.email,
+            created_at: now,
+            last_login_at: now
+          }
+        ])
+        .select()
+        .single();
+      
+      if (error) {
+        log(`사용자 생성 오류: ${error.message} (코드: ${error.code})`, 'supabase');
+        
+        // PGRST409 - 중복 키 에러 (이미 존재하는 사용자)
+        if (error.code === 'PGRST409' || error.code === '23505') {
+          log('이미 존재하는 사용자 - 다시 조회 시도', 'supabase');
+          const existingUser = await this.getUserByProviderId(userData.provider, userData.provider_id);
+          if (existingUser) {
+            return existingUser;
+          }
         }
-      ])
-      .select()
-      .single();
-    
-    if (error) {
-      log(`사용자 생성 오류: ${error.message}`, 'supabase');
+        
+        return null;
+      }
+      
+      log(`사용자 생성 성공: ${data.nickname} (ID: ${data.id})`, 'supabase');
+      return data as SupabaseUser;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log(`사용자 생성 중 예외 발생: ${errorMessage}`, 'supabase');
       return null;
     }
-    
-    return data as SupabaseUser;
   },
   
   // 마지막 로그인 시간 업데이트
   async updateLastLoginTime(userId: string): Promise<SupabaseUser | null> {
-    const now = new Date().toISOString();
-    
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        last_login_at: now
-      })
-      .eq('id', userId)
-      .select()
-      .single();
-    
-    if (error) {
-      log(`사용자 로그인 시간 업데이트 오류: ${error.message}`, 'supabase');
+    try {
+      log(`사용자 로그인 시간 업데이트 시도: ID ${userId}`, 'supabase');
+      const now = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          last_login_at: now
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+      
+      if (error) {
+        log(`사용자 로그인 시간 업데이트 오류: ${error.message} (코드: ${error.code})`, 'supabase');
+        
+        // 사용자를 찾을 수 없는 경우 다시 조회
+        if (error.code === 'PGRST116') {
+          log(`사용자를 찾을 수 없음 - ID로 다시 조회 시도: ${userId}`, 'supabase');
+          const user = await this.getUserById(userId);
+          return user;
+        }
+        
+        return null;
+      }
+      
+      log(`사용자 로그인 시간 업데이트 성공: ${data.nickname} (ID: ${data.id})`, 'supabase');
+      return data as SupabaseUser;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log(`사용자 로그인 시간 업데이트 중 예외 발생: ${errorMessage}`, 'supabase');
       return null;
     }
-    
-    return data as SupabaseUser;
   },
   
   // ID로 사용자 얻기
   async getUserById(userId: string): Promise<SupabaseUser | null> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (error) {
-      log(`사용자 조회 오류: ${error.message}`, 'supabase');
+    try {
+      if (!userId) {
+        log('유효하지 않은 사용자 ID: 빈 문자열 또는 undefined', 'supabase');
+        return null;
+      }
+      
+      log(`ID로 사용자 조회: ${userId}`, 'supabase');
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        if (error.code !== 'PGRST116') { // 결과 없음 에러는 조용히 처리
+          log(`사용자 ID 조회 오류: ${error.message} (코드: ${error.code})`, 'supabase');
+        } else {
+          log(`ID ${userId}에 해당하는 사용자를 찾을 수 없습니다`, 'supabase');
+        }
+        return null;
+      }
+      
+      log(`사용자 조회 성공: ${data.nickname} (ID: ${data.id})`, 'supabase');
+      return data as SupabaseUser;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log(`사용자 ID 조회 중 예외 발생: ${errorMessage}`, 'supabase');
       return null;
     }
-    
-    return data as SupabaseUser;
   }
 };

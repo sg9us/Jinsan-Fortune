@@ -31,26 +31,51 @@ if (authConfig.naver.clientID && authConfig.naver.clientSecret) {
       },
       async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
+          // 네이버 프로필 정보 로깅
+          log(`네이버 로그인 프로필: ${JSON.stringify({
+            id: profile.id,
+            displayName: profile.displayName,
+            email: profile.emails?.[0]?.value || '없음',
+            hasEmail: !!(profile.emails && profile.emails.length > 0)
+          })}`, 'passport');
+          
           // 이미 가입한 사용자인지 확인
           const existingUser = await userService.getUserByProviderId('naver', profile.id);
           
           if (existingUser) {
             // 기존 사용자인 경우 로그인 시간 업데이트
+            log(`기존 네이버 사용자 로그인: ${existingUser.nickname} (ID: ${existingUser.id})`, 'passport');
             const updatedUser = await userService.updateLastLoginTime(existingUser.id);
+            if (!updatedUser) {
+              log('로그인 시간 업데이트 실패', 'passport');
+              return done(new Error('로그인 시간 업데이트 중 오류가 발생했습니다'), false);
+            }
             return done(null, updatedUser);
           }
           
           // 새 사용자 생성
-          const newUser = await userService.createUser({
+          log(`새 네이버 사용자 자동 등록 시도: ${profile.displayName || '이름 없음'} (네이버 ID: ${profile.id})`, 'passport');
+          
+          const userData = {
             provider: 'naver',
             provider_id: profile.id,
-            nickname: profile.displayName || '사용자',
+            nickname: profile.displayName || '네이버 사용자',
             email: profile.emails?.[0]?.value || null
-          });
+          };
           
+          const newUser = await userService.createUser(userData);
+          
+          if (!newUser) {
+            log(`네이버 사용자 생성 실패: ${JSON.stringify(userData)}`, 'passport');
+            return done(new Error('사용자 생성 중 오류가 발생했습니다'), false);
+          }
+          
+          log(`새 네이버 사용자 등록 완료: ${newUser.nickname} (ID: ${newUser.id})`, 'passport');
           return done(null, newUser);
         } catch (error) {
-          return done(error, false);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          log(`네이버 인증 오류: ${errorMessage}`, 'passport');
+          return done(new Error(`네이버 인증 처리 중 오류가 발생했습니다: ${errorMessage}`), false);
         }
       }
     )
@@ -71,26 +96,51 @@ if (authConfig.kakao.clientID && authConfig.kakao.clientSecret) {
       },
       async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
+          // 카카오 프로필 정보 로깅
+          log(`카카오 로그인 프로필: ${JSON.stringify({
+            id: profile.id,
+            displayName: profile.displayName,
+            email: profile._json?.kakao_account?.email || '없음',
+            hasEmail: !!profile._json?.kakao_account?.email
+          })}`, 'passport');
+          
           // 이미 가입한 사용자인지 확인
           const existingUser = await userService.getUserByProviderId('kakao', profile.id);
           
           if (existingUser) {
             // 기존 사용자인 경우 로그인 시간 업데이트
+            log(`기존 카카오 사용자 로그인: ${existingUser.nickname} (ID: ${existingUser.id})`, 'passport');
             const updatedUser = await userService.updateLastLoginTime(existingUser.id);
+            if (!updatedUser) {
+              log('로그인 시간 업데이트 실패', 'passport');
+              return done(new Error('로그인 시간 업데이트 중 오류가 발생했습니다'), false);
+            }
             return done(null, updatedUser);
           }
           
           // 새 사용자 생성
-          const newUser = await userService.createUser({
+          log(`새 카카오 사용자 자동 등록 시도: ${profile.displayName || '이름 없음'} (카카오 ID: ${profile.id})`, 'passport');
+          
+          const userData = {
             provider: 'kakao',
             provider_id: profile.id,
-            nickname: profile.displayName || '사용자',
+            nickname: profile.displayName || '카카오 사용자',
             email: profile._json?.kakao_account?.email || null
-          });
+          };
           
+          const newUser = await userService.createUser(userData);
+          
+          if (!newUser) {
+            log(`카카오 사용자 생성 실패: ${JSON.stringify(userData)}`, 'passport');
+            return done(new Error('사용자 생성 중 오류가 발생했습니다'), false);
+          }
+          
+          log(`새 카카오 사용자 등록 완료: ${newUser.nickname} (ID: ${newUser.id})`, 'passport');
           return done(null, newUser);
         } catch (error) {
-          return done(error, false);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          log(`카카오 인증 오류: ${errorMessage}`, 'passport');
+          return done(new Error(`카카오 인증 처리 중 오류가 발생했습니다: ${errorMessage}`), false);
         }
       }
     )
