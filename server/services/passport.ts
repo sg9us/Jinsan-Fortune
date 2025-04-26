@@ -123,13 +123,19 @@ if (authConfig.kakao.clientID && authConfig.kakao.clientSecret) {
       },
       async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
-          // 카카오 프로필 정보 로깅
+          // 카카오 프로필 정보 로깅 (더 상세하게)
           log(`카카오 로그인 프로필: ${JSON.stringify({
             id: profile.id,
             displayName: profile.displayName,
             email: profile._json?.kakao_account?.email || '없음',
-            hasEmail: !!profile._json?.kakao_account?.email
+            hasEmail: !!profile._json?.kakao_account?.email,
+            hasJson: !!profile._json,
+            hasKakaoAccount: !!(profile._json?.kakao_account),
+            profileKeys: Object.keys(profile),
+            jsonKeys: profile._json ? Object.keys(profile._json) : []
           })}`, 'passport');
+          
+          log('카카오 인증 후 사용자 생성 시도...', 'passport');
           
           // 이미 가입한 사용자인지 확인
           const existingUser = await userService.getUserByProviderId('kakao', profile.id);
