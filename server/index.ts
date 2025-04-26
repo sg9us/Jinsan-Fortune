@@ -28,8 +28,10 @@ app.use(session(authConfig.session));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 인증 라우터 설정
-app.use('/auth', createAuthRouter());
+// 인증 라우터 설정 - 두 가지 경로 모두 지원
+const authRouter = createAuthRouter();
+app.use('/auth', authRouter);
+app.use('/api/auth', authRouter); // 배포 환경에서 사용되는 API 경로도 지원
 
 app.use((req, res, next) => {
   const start = Date.now();

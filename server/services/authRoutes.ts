@@ -55,6 +55,7 @@ export const createAuthRouter = () => {
   if (providers.naver) {
     router.get('/naver', passport.authenticate('naver'));
     
+    // 기존 콜백 경로
     router.get(
       '/naver/callback',
       passport.authenticate('naver', { 
@@ -62,6 +63,17 @@ export const createAuthRouter = () => {
         failureRedirect
       })
     );
+    
+    // API 경로 형식의 콜백 추가 (/api/auth/callback/naver)
+    router.get(
+      '/callback/naver',
+      passport.authenticate('naver', { 
+        successRedirect,
+        failureRedirect
+      })
+    );
+    
+    log('네이버 OAuth 콜백 URL: ' + authConfig.naver.callbackURL, 'auth');
   } else {
     // 네이버 로그인이 비활성화된 경우 임시 에러 처리
     router.get('/naver', (req, res) => {
@@ -75,6 +87,7 @@ export const createAuthRouter = () => {
   if (providers.kakao) {
     router.get('/kakao', passport.authenticate('kakao'));
     
+    // 기존 콜백 경로
     router.get(
       '/kakao/callback',
       passport.authenticate('kakao', { 
@@ -82,6 +95,17 @@ export const createAuthRouter = () => {
         failureRedirect
       })
     );
+    
+    // API 경로 형식의 콜백 추가 (/api/auth/callback/kakao)
+    router.get(
+      '/callback/kakao',
+      passport.authenticate('kakao', { 
+        successRedirect,
+        failureRedirect
+      })
+    );
+    
+    log('카카오 OAuth 콜백 URL: ' + authConfig.kakao.callbackURL, 'auth');
   } else {
     // 카카오 로그인이 비활성화된 경우 임시 에러 처리
     router.get('/kakao', (req, res) => {
