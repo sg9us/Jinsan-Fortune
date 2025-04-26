@@ -1,10 +1,9 @@
-// 배포 환경 감지
-const isProduction = process.env.NODE_ENV === 'production';
+// 배포 환경 감지 - APP_URL이 설정되어 있으면 배포 환경으로 간주
+// 개발 환경에서도 배포 환경의 콜백 URL을 사용하기 위해 강제 설정
+const isProduction = process.env.NODE_ENV === 'production' || !!process.env.APP_URL;
 
-// 기본 호스트 설정 (배포/개발 환경에 따라 다름)
-const defaultHost = isProduction 
-  ? (process.env.APP_URL || 'https://jinsan-fortune.replit.app') 
-  : 'http://localhost:5000';
+// 기본 호스트 설정 (항상 APP_URL 우선, 없으면 기본값)
+const defaultHost = process.env.APP_URL || 'https://jinsan-fortune.replit.app';
 
 // 서버 시작 시 현재 호스트 정보 로깅
 const logHost = () => {
@@ -37,9 +36,12 @@ const getKakaoCallbackUrl = () => {
     return process.env.KAKAO_CALLBACK_URL;
   }
   
+  // 1-1. 직접 전체 URL로 설정했다면 그것을 사용
+  const hardcodedUrl = 'https://jinsan-fortune.replit.app/api/auth/callback/kakao';
+  
   // 2. 배포 환경에서는 /api/auth/callback/kakao 형식 사용
   if (isProduction) {
-    return `${defaultHost}/api/auth/callback/kakao`;
+    return hardcodedUrl; // `${defaultHost}/api/auth/callback/kakao` 대신 직접 URL 사용
   }
   
   // 3. 개발 환경에서는 /auth/kakao/callback 형식 사용
