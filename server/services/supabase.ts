@@ -92,12 +92,163 @@ export interface SupabaseUser {
   age_range?: string | null;
   is_registered?: boolean;
   is_admin?: boolean;
+  is_social?: boolean;
   created_at: string;
   last_login_at: string;
 }
 
 // Supabase 사용자 서비스
 export const userService = {
+  // 이메일/비밀번호 회원가입
+  async signUpWithEmail(email: string, password: string, nickname: string): Promise<SupabaseUser | null> {
+    try {
+      log(`이메일로 회원가입 시도: ${email.substring(0, 3)}...`, 'supabase');
+      
+      // 이메일 중복 확인
+      const existingUser = await this.getUserByEmail(email);
+      if (existingUser) {
+        log(`이미 가입된 이메일입니다: ${email.substring(0, 3)}...`, 'supabase');
+        return null;
+      }
+      
+      // Supabase Auth로 회원가입
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (authError) {
+        log(`Auth 회원가입 오류: ${authError.message}`, 'supabase');
+        return null;
+      }
+      
+      if (!authData.user) {
+        log('Auth 회원가입 후 사용자 정보를 받지 못했습니다', 'supabase');
+        return null;
+      }
+      
+      const now = new Date().toISOString();
+      
+      // users 테이블에 사용자 추가
+      const { data, error } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: authData.user.id,
+            provider: 'email',
+            provider_id: email,
+            nickname: nickname,
+            email: email,
+            is_admin: false,
+            is_social: false,
+            created_at: now,
+            last_login_at: now
+          }
+        ])
+        .select()
+        .single();
+      
+      if (error) {
+        log(`사용자 DB 저장 오류: ${error.message}`, 'supabase');
+        return null;
+      }
+      
+      log(`이메일 회원가입 성공: ${email.substring(0, 3)}... (ID: ${data.id})`, 'supabase');
+      return data as SupabaseUser;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log(`이메일 회원가입 중 예외 발생: ${errorMessage}`, 'supabase');
+      return null;
+    }
+  },
+  
+  // 이메일/비밀번호 로그인
+  async signInWithEmail(email: string, password: string): Promise<SupabaseUser | null> {
+    try {
+      log(`이메일로 로그인 시도: ${email.substring(0, 3)}...`, 'supabase');
+      
+      // Supabase Auth로 로그인
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (authError) {
+        log(`Auth 로그인 오류: ${authError.message}`, 'supabase');
+        return null;
+      }
+      
+      if (!authData.user) {
+        log('Auth 로그인 후 사용자 정보를 받지 못했습니다', 'supabase');
+        return null;
+      }
+      
+      // DB에서 사용자 정보 가져오기
+      const user = await this.getUserById(authData.user.id);
+      
+      if (!user) {
+        log(`Auth에는 있지만 DB에 없는 사용자: ${authData.user.id}`, 'supabase');
+        
+        // Auth에는 있지만 DB에 없는 경우 사용자 생성
+        const now = new Date().toISOString();
+        const { data, error } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: authData.user.id,
+              provider: 'email',
+              provider_id: email,
+              nickname: email.split('@')[0], // 이메일 아이디 부분을 닉네임으로 사용
+              email: email,
+              is_admin: false,
+              is_social: false,
+              created_at: now,
+              last_login_at: now
+            }
+          ])
+          .select()
+          .single();
+        
+        if (error) {
+          log(`로그인 중 사용자 자동 생성 오류: ${error.message}`, 'supabase');
+          return null;
+        }
+        
+        return data as SupabaseUser;
+      }
+      
+      // 마지막 로그인 시간 업데이트
+      const updatedUser = await this.updateLastLoginTime(user.id);
+      
+      log(`이메일 로그인 성공: ${email.substring(0, 3)}... (ID: ${user.id})`, 'supabase');
+      return updatedUser;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log(`이메일 로그인 중 예외 발생: ${errorMessage}`, 'supabase');
+      return null;
+    }
+  },
+  
+  // 이메일로 사용자 찾기
+  async getUserByEmail(email: string): Promise<SupabaseUser | null> {
+    if (!email) return null;
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (error) {
+      if (error.code !== 'PGRST116') { // 결과를 찾을 수 없음 오류 코드는 무시
+        log(`이메일로 사용자 조회 오류: ${error.message}`, 'supabase');
+      }
+      return null;
+    }
+    
+    return data as SupabaseUser;
+  },
+  
   // 공급자 ID로 사용자 찾기
   async getUserByProviderId(provider: string, providerId: string): Promise<SupabaseUser | null> {
     const { data, error } = await supabase
@@ -156,6 +307,7 @@ export const userService = {
             nickname: nickname,
             email: email,
             is_admin: false,
+            is_social: true,
             created_at: now,
             last_login_at: now
           }

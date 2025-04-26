@@ -163,7 +163,7 @@ export default function Login() {
                   disabled={!isAvailable}
                   onClick={() => {
                     if (isAvailable) {
-                      window.location.href = `/auth/${provider.key}`;
+                      window.location.href = `/api/auth/${provider.key}`;
                     } else {
                       toast({
                         title: t('unavailableService'),
@@ -180,6 +180,29 @@ export default function Login() {
             })}
           </div>
 
+          <Separator className="my-4" />
+          
+          <div className="text-center mb-4">또는</div>
+          
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => setLocation('/email-login')}
+          >
+            이메일로 로그인
+          </Button>
+
+          <div className="text-center mt-4 text-sm">
+            <span>계정이 없으신가요? </span>
+            <Button 
+              variant="link" 
+              className="p-0 h-auto"
+              onClick={() => setLocation('/email-signup')}
+            >
+              회원가입
+            </Button>
+          </div>
+          
           <Separator className="my-4" />
           
           <div className="text-center text-sm text-muted-foreground">

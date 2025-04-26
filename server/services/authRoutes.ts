@@ -307,6 +307,133 @@ export const createAuthRouter = () => {
     }
   });
 
+  // 이메일/비밀번호 회원가입
+  router.post('/email/signup', async (req, res) => {
+    try {
+      const { email, password, confirmPassword, nickname } = req.body;
+      
+      // 필수 필드 검증
+      if (!email || !password || !confirmPassword || !nickname) {
+        return res.status(400).json({
+          success: false,
+          message: '모든 필드를 입력해주세요.'
+        });
+      }
+      
+      // 이메일 형식 검증
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: '유효한 이메일 주소를 입력해주세요.'
+        });
+      }
+      
+      // 비밀번호 길이 검증
+      if (password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: '비밀번호는 8자 이상이어야 합니다.'
+        });
+      }
+      
+      // 비밀번호 일치 검증
+      if (password !== confirmPassword) {
+        return res.status(400).json({
+          success: false,
+          message: '비밀번호가 일치하지 않습니다.'
+        });
+      }
+      
+      // 사용자 생성
+      const user = await userService.signUpWithEmail(email, password, nickname);
+      
+      if (!user) {
+        return res.status(500).json({
+          success: false,
+          message: '회원가입 중 오류가 발생했습니다. 이미 가입된 이메일일 수 있습니다.'
+        });
+      }
+      
+      // 세션에 사용자 정보 저장
+      req.login(user, (err) => {
+        if (err) {
+          log(`세션 저장 오류: ${err.message}`, 'auth');
+          return res.status(500).json({
+            success: false,
+            message: '로그인 세션 생성 중 오류가 발생했습니다.'
+          });
+        }
+        
+        // 성공 응답
+        res.json({
+          success: true,
+          message: '회원가입이 완료되었습니다.',
+          user: formatUserInfo(user)
+        });
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log(`이메일 회원가입 처리 중 오류: ${errorMessage}`, 'auth');
+      
+      res.status(500).json({
+        success: false,
+        message: '회원가입 처리 중 오류가 발생했습니다.'
+      });
+    }
+  });
+  
+  // 이메일/비밀번호 로그인
+  router.post('/email/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // 필수 필드 검증
+      if (!email || !password) {
+        return res.status(400).json({
+          success: false,
+          message: '이메일과 비밀번호를 모두 입력해주세요.'
+        });
+      }
+      
+      // 사용자 인증
+      const user = await userService.signInWithEmail(email, password);
+      
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: '이메일 또는 비밀번호가 올바르지 않습니다.'
+        });
+      }
+      
+      // 세션에 사용자 정보 저장
+      req.login(user, (err) => {
+        if (err) {
+          log(`세션 저장 오류: ${err.message}`, 'auth');
+          return res.status(500).json({
+            success: false,
+            message: '로그인 세션 생성 중 오류가 발생했습니다.'
+          });
+        }
+        
+        // 성공 응답
+        res.json({
+          success: true,
+          message: '로그인에 성공했습니다.',
+          user: formatUserInfo(user)
+        });
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log(`이메일 로그인 처리 중 오류: ${errorMessage}`, 'auth');
+      
+      res.status(500).json({
+        success: false,
+        message: '로그인 처리 중 오류가 발생했습니다.'
+      });
+    }
+  });
+  
   // 활성화된 제공자 로깅
   log(`활성화된 인증 제공자: ${Object.entries(providers)
     .filter(([_, active]) => active)
