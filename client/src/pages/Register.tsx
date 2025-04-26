@@ -302,7 +302,9 @@ export default function Register() {
               <div className="flex items-center space-x-2">
                 <Checkbox id="privacy" required />
                 <Label htmlFor="privacy" className="text-sm">
-                  개인정보 수집 및 이용에 동의합니다 <span className="text-red-500">*</span>
+                  <a href="https://terrific-laugh-d1f.notion.site/1e1189caa53d80dea2e6cb6e25543b01?pvs=4" target="_blank" rel="noopener noreferrer" className="underline">
+                    개인정보 수집 및 이용
+                  </a>에 동의합니다 <span className="text-red-500">*</span>
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
