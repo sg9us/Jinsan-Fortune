@@ -24,6 +24,7 @@ export interface SupabaseUser {
   provider_id: string;
   nickname: string;
   email: string | null;
+  is_admin?: boolean;
   created_at: string;
   last_login_at: string;
 }
@@ -49,12 +50,12 @@ export const userService = {
     return data as SupabaseUser;
   },
   
-  // 사용자 생성
+  // 사용자 생성 (자동 회원가입)
   async createUser(userData: {
     provider: string;
     provider_id: string;
-    nickname: string;
-    email: string | null;
+    nickname?: string;
+    email?: string | null;
   }): Promise<SupabaseUser | null> {
     try {
       // 중복 확인 - provider_id가 동일한 사용자가 있는지 확인
@@ -66,12 +67,16 @@ export const userService = {
       
       const now = new Date().toISOString();
       
+      // 기본값 설정 - 누락된 필드에 대한 처리
+      const nickname = userData.nickname || `${userData.provider} 사용자`;
+      const email = userData.email || null;
+      
       // 로그 추가
       log(`새 사용자 생성 시도: ${JSON.stringify({
         provider: userData.provider,
         provider_id: userData.provider_id,
-        nickname: userData.nickname,
-        email: userData.email ? userData.email.substring(0, 3) + '...' : null
+        nickname: nickname,
+        email: email ? email.substring(0, 3) + '...' : null
       })}`, 'supabase');
       
       const { data, error } = await supabase
@@ -80,8 +85,9 @@ export const userService = {
           {
             provider: userData.provider,
             provider_id: userData.provider_id,
-            nickname: userData.nickname,
-            email: userData.email,
+            nickname: nickname,
+            email: email,
+            is_admin: false,
             created_at: now,
             last_login_at: now
           }

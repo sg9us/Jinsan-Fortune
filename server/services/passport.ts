@@ -53,25 +53,52 @@ if (authConfig.naver.clientID && authConfig.naver.clientSecret) {
             return done(null, updatedUser);
           }
           
-          // 새 사용자 생성
+          // 새 사용자 생성 (자동 회원가입)
           log(`새 네이버 사용자 자동 등록 시도: ${profile.displayName || '이름 없음'} (네이버 ID: ${profile.id})`, 'passport');
           
-          const userData = {
-            provider: 'naver',
-            provider_id: profile.id,
-            nickname: profile.displayName || '네이버 사용자',
-            email: profile.emails?.[0]?.value || null
-          };
-          
-          const newUser = await userService.createUser(userData);
-          
-          if (!newUser) {
-            log(`네이버 사용자 생성 실패: ${JSON.stringify(userData)}`, 'passport');
-            return done(new Error('사용자 생성 중 오류가 발생했습니다'), false);
+          try {
+            // 프로필에서 필요한 정보 추출
+            let displayName = '';
+            if (profile.displayName && profile.displayName.trim() !== '') {
+              displayName = profile.displayName;
+            } else if (profile._json && profile._json.nickname) {
+              displayName = profile._json.nickname;
+            } else {
+              displayName = '네이버 사용자';
+            }
+            
+            // 이메일 정보 추출
+            let email = null;
+            if (profile.emails && profile.emails.length > 0 && profile.emails[0].value) {
+              email = profile.emails[0].value;
+            } else if (profile._json && profile._json.email) {
+              email = profile._json.email;
+            }
+            
+            const userData = {
+              provider: 'naver',
+              provider_id: profile.id,
+              nickname: displayName,
+              email: email
+            };
+            
+            const newUser = await userService.createUser(userData);
+            
+            if (!newUser) {
+              log(`네이버 사용자 생성 실패: ${JSON.stringify({
+                ...userData,
+                email: userData.email ? userData.email.substring(0, 3) + '...' : null
+              })}`, 'passport');
+              return done(new Error('사용자 생성 중 오류가 발생했습니다'), false);
+            }
+            
+            log(`새 네이버 사용자 등록 완료: ${newUser.nickname} (ID: ${newUser.id})`, 'passport');
+            return done(null, newUser);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            log(`네이버 사용자 생성 중 예외 발생: ${errorMessage}`, 'passport');
+            return done(new Error(`네이버 사용자 생성 중 오류: ${errorMessage}`), false);
           }
-          
-          log(`새 네이버 사용자 등록 완료: ${newUser.nickname} (ID: ${newUser.id})`, 'passport');
-          return done(null, newUser);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           log(`네이버 인증 오류: ${errorMessage}`, 'passport');
@@ -118,25 +145,50 @@ if (authConfig.kakao.clientID && authConfig.kakao.clientSecret) {
             return done(null, updatedUser);
           }
           
-          // 새 사용자 생성
+          // 새 사용자 생성 (자동 회원가입)
           log(`새 카카오 사용자 자동 등록 시도: ${profile.displayName || '이름 없음'} (카카오 ID: ${profile.id})`, 'passport');
           
-          const userData = {
-            provider: 'kakao',
-            provider_id: profile.id,
-            nickname: profile.displayName || '카카오 사용자',
-            email: profile._json?.kakao_account?.email || null
-          };
-          
-          const newUser = await userService.createUser(userData);
-          
-          if (!newUser) {
-            log(`카카오 사용자 생성 실패: ${JSON.stringify(userData)}`, 'passport');
-            return done(new Error('사용자 생성 중 오류가 발생했습니다'), false);
+          try {
+            // 프로필에서 필요한 정보 추출
+            let displayName = '';
+            if (profile.displayName && profile.displayName.trim() !== '') {
+              displayName = profile.displayName;
+            } else if (profile._json?.properties?.nickname) {
+              displayName = profile._json.properties.nickname;
+            } else {
+              displayName = '카카오 사용자';
+            }
+            
+            // 이메일 정보 추출
+            let email = null;
+            if (profile._json?.kakao_account?.email) {
+              email = profile._json.kakao_account.email;
+            }
+            
+            const userData = {
+              provider: 'kakao',
+              provider_id: profile.id,
+              nickname: displayName,
+              email: email
+            };
+            
+            const newUser = await userService.createUser(userData);
+            
+            if (!newUser) {
+              log(`카카오 사용자 생성 실패: ${JSON.stringify({
+                ...userData,
+                email: userData.email ? userData.email.substring(0, 3) + '...' : null
+              })}`, 'passport');
+              return done(new Error('사용자 생성 중 오류가 발생했습니다'), false);
+            }
+            
+            log(`새 카카오 사용자 등록 완료: ${newUser.nickname} (ID: ${newUser.id})`, 'passport');
+            return done(null, newUser);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            log(`카카오 사용자 생성 중 예외 발생: ${errorMessage}`, 'passport');
+            return done(new Error(`카카오 사용자 생성 중 오류: ${errorMessage}`), false);
           }
-          
-          log(`새 카카오 사용자 등록 완료: ${newUser.nickname} (ID: ${newUser.id})`, 'passport');
-          return done(null, newUser);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           log(`카카오 인증 오류: ${errorMessage}`, 'passport');
