@@ -329,11 +329,27 @@ export const createAuthRouter = () => {
         });
       }
       
+      // 닉네임 길이 검증
+      if (nickname.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: '닉네임은 2자 이상이어야 합니다.'
+        });
+      }
+      
       // 비밀번호 길이 검증
       if (password.length < 8) {
         return res.status(400).json({
           success: false,
           message: '비밀번호는 8자 이상이어야 합니다.'
+        });
+      }
+      
+      // 비밀번호 문자 및 숫자 포함 검증
+      if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: '비밀번호는 문자와 숫자를 모두 포함해야 합니다.'
         });
       }
       

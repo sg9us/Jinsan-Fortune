@@ -197,7 +197,7 @@ export default function Login() {
             <span>계정이 없으신가요? </span>
             <Button 
               variant="link" 
-              className="p-0 h-auto"
+              className="p-0 h-auto font-medium"
               onClick={() => setLocation('/email-signup')}
             >
               회원가입
