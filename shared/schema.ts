@@ -9,6 +9,12 @@ export const users = pgTable("users", {
   provider_id: text("provider_id").notNull().unique(), // 외부 제공자로부터의 고유 ID
   nickname: text("nickname").notNull(),
   email: text("email"),
+  // 회원가입 추가 필드
+  fullName: text("full_name"),          // 실명
+  phoneNumber: text("phone_number"),    // 전화번호
+  gender: text("gender"),               // 성별 (선택사항)
+  birthdate: text("birthdate"),         // 생년월일 (선택사항)
+  isRegistered: boolean("is_registered").notNull().default(false), // 회원가입 완료 여부
   isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   lastLoginAt: timestamp("last_login_at").defaultNow(),
