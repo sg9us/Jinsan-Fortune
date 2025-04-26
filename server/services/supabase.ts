@@ -5,16 +5,34 @@ import { log } from '../vite';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_API_KEY;
 
-// Supabase 클라이언트 생성
+// 환경 변수 확인
 if (!supabaseUrl || !supabaseKey) {
   log('Supabase URL 또는 API 키가 제공되지 않았습니다. 일부 기능이 비활성화됩니다.', 'supabase');
+  log('환경 변수를 확인하세요. SUPABASE_URL과 SUPABASE_API_KEY가 필요합니다.', 'supabase');
+  log('주의: SUPABASE_API_KEY는 anon 키가 아닌 service_role 키여야 합니다!', 'supabase');
 } else {
   log(`Supabase 클라이언트가 초기화되었습니다. (URL: ${supabaseUrl.substring(0, 20)}...)`, 'supabase');
+  
+  // 키가 service_role 키인지 확인 (간단한 휴리스틱)
+  const isLikelyServiceRole = supabaseKey.includes('eyJ0') && supabaseKey.length > 100;
+  
+  if (!isLikelyServiceRole) {
+    log('주의: SUPABASE_API_KEY가 service_role 키가 아닌 것 같습니다. RLS 정책을 우회하기 위해 service_role 키가 필요합니다.', 'supabase');
+  } else {
+    log('service_role 키로 Supabase 클라이언트를 초기화합니다. RLS 정책을 우회합니다.', 'supabase');
+  }
 }
 
+// 서비스 역할 키로 클라이언트 초기화 (RLS 정책 우회)
 export const supabase = createClient(
   supabaseUrl || '',
-  supabaseKey || ''
+  supabaseKey || '',
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 // 사용자 유형 정의
@@ -79,6 +97,7 @@ export const userService = {
         email: email ? email.substring(0, 3) + '...' : null
       })}`, 'supabase');
       
+      // 서비스 역할 키로 RLS 정책 우회
       const { data, error } = await supabase
         .from('users')
         .insert([
@@ -98,7 +117,22 @@ export const userService = {
       if (error) {
         log(`사용자 생성 오류: ${error.message} (코드: ${error.code})`, 'supabase');
         
-        // PGRST409 - 중복 키 에러 (이미 존재하는 사용자)
+        // 401 오류 세부 정보 로깅 (인증 관련)
+        if (error.code === '401' || error.status === 401) {
+          log('401 인증 오류 - service_role 키를 확인하세요. anon 키가 아닌 service_role 키가 필요합니다!', 'supabase');
+          log('Supabase Project Settings -> API -> service_role 키를 사용하세요', 'supabase');
+        }
+        
+        // 406 오류 세부 정보 로깅 (RLS 정책 관련)
+        if (error.code === '406' || error.status === 406) {
+          log('406 오류 - RLS 정책이 삽입 작업을 차단했습니다', 'supabase');
+          log('다음 옵션 중 하나를 선택하세요:', 'supabase');
+          log('1. service_role 키를 사용하여 RLS를 우회하세요 (권장)', 'supabase');
+          log('2. Supabase에서 해당 테이블의 RLS 정책을 수정하세요', 'supabase');
+          log('3. Supabase에서 해당 테이블의 RLS를 잠시 비활성화하세요 (테스트용)', 'supabase');
+        }
+        
+        // 중복 키 (이미 존재하는 사용자)
         if (error.code === 'PGRST409' || error.code === '23505') {
           log('이미 존재하는 사용자 - 다시 조회 시도', 'supabase');
           const existingUser = await this.getUserByProviderId(userData.provider, userData.provider_id);
