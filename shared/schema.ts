@@ -85,17 +85,20 @@ export type ChatMessage = typeof chatMessages.$inferSelect;
 
 // Review schema
 export const reviews = pgTable("reviews", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  serviceType: text("service_type").notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id),
   rating: integer("rating").notNull(),
-  content: text("content").notNull(),
+  comment: text("comment"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isDeleted: boolean("is_deleted").notNull().default(false),
 });
 
 export const insertReviewSchema = createInsertSchema(reviews).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
+  isDeleted: true,
 });
 
 export type InsertReview = z.infer<typeof insertReviewSchema>;
