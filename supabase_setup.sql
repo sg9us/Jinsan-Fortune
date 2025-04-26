@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   provider_id TEXT NOT NULL, -- OAuth 제공자의 고유 ID
   nickname TEXT NOT NULL,
   email TEXT, -- 이메일은 필수가 아님
+  is_admin BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   last_login_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

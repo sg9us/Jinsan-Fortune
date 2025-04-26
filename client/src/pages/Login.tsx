@@ -94,7 +94,11 @@ export default function Login() {
   // 이미 로그인한 경우 홈으로 리디렉션
   useEffect(() => {
     if (user?.isAuthenticated) {
-      setLocation('/');
+      if (user.isAdmin) {
+        setLocation('/admin');
+      } else {
+        setLocation('/');
+      }
     }
   }, [user, setLocation]);
 

@@ -33,6 +33,9 @@ export const translations: Translations = {
     unavailableService: "서비스 이용 불가",
     oauthProviderUnavailable: "현재 이 로그인 서비스를 이용할 수 없습니다",
     error: "오류",
+    adminDashboard: "관리자 대시보드",
+    bookingList: "예약 목록",
+    adminRequired: "관리자 권한이 필요합니다",
     
     // Hero section
     heroTitle: "당신의 운명을 알아보세요",

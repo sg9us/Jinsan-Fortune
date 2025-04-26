@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   providerId: text("provider_id").notNull().unique(), // 외부 제공자로부터의 고유 ID
   nickname: text("nickname").notNull(),
   email: text("email"),
+  isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   lastLoginAt: timestamp("last_login_at").defaultNow(),
 });
