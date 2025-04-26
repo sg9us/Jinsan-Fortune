@@ -29,6 +29,9 @@ const formatUserInfo = (user: SupabaseUser) => {
     phoneNumber: user.phone_number,
     gender: user.gender,
     birthdate: user.birthdate,
+    birthTime: user.birth_time,
+    isTimeUnknown: user.is_time_unknown,
+    ageRange: user.age_range,
     isRegistered: user.is_registered,
     created_at: user.created_at,
     last_login_at: user.last_login_at,
@@ -224,15 +227,28 @@ export const createAuthRouter = () => {
         return res.status(401).json({ success: false, message: '인증되지 않은 사용자입니다.' });
       }
       
-      const { fullName, phoneNumber, gender, birthdate } = req.body;
+      const { 
+        fullName, 
+        phoneNumber, 
+        gender, 
+        birthYear, 
+        birthMonth, 
+        birthDay,
+        birthTime,
+        isTimeUnknown,
+        ageRange
+      } = req.body;
       
       // 필수 정보 검증
-      if (!fullName || !phoneNumber) {
+      if (!fullName || !phoneNumber || !gender || !birthYear || !birthMonth || !birthDay) {
         return res.status(400).json({ 
           success: false, 
-          message: '이름과 전화번호는 필수 입력 항목입니다.' 
+          message: '필수 입력 항목을 모두 작성해주세요.' 
         });
       }
+      
+      // 생년월일 포맷팅
+      const birthdate = `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`;
       
       const user = req.user as SupabaseUser;
       log(`회원가입 정보 업데이트 시도: ${user.nickname} (ID: ${user.id})`, 'auth');
@@ -243,8 +259,11 @@ export const createAuthRouter = () => {
         .update({
           full_name: fullName,
           phone_number: phoneNumber,
-          gender: gender || null,
-          birthdate: birthdate || null,
+          gender: gender,
+          birthdate: birthdate,
+          birth_time: isTimeUnknown ? null : birthTime,
+          is_time_unknown: isTimeUnknown || false,
+          age_range: ageRange,
           is_registered: true
         })
         .eq('id', user.id)

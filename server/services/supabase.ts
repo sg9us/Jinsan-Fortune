@@ -87,6 +87,9 @@ export interface SupabaseUser {
   phone_number?: string | null;
   gender?: string | null;
   birthdate?: string | null;
+  birth_time?: string | null;
+  is_time_unknown?: boolean;
+  age_range?: string | null;
   is_registered?: boolean;
   is_admin?: boolean;
   created_at: string;
