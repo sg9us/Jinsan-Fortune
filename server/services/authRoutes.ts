@@ -85,27 +85,39 @@ export const createAuthRouter = () => {
 
   // 카카오 로그인 (클라이언트 ID와 시크릿이 제공된 경우에만)
   if (providers.kakao) {
-    router.get('/kakao', passport.authenticate('kakao'));
+    // 카카오 로그인 시도 시 사용된 리디렉트 URI 로깅
+    router.get('/kakao', (req, res, next) => {
+      log('카카오 로그인 요청 경로: ' + req.originalUrl, 'auth');
+      log('카카오 로그인 리디렉트 URI: ' + authConfig.kakao.callbackURL, 'auth');
+      
+      passport.authenticate('kakao')(req, res, next);
+    });
     
     // 기존 콜백 경로
     router.get(
       '/kakao/callback',
-      passport.authenticate('kakao', { 
-        successRedirect,
-        failureRedirect
-      })
+      (req, res, next) => {
+        log('카카오 콜백 호출됨 (기존 경로): ' + req.originalUrl, 'auth');
+        passport.authenticate('kakao', { 
+          successRedirect,
+          failureRedirect
+        })(req, res, next);
+      }
     );
     
     // API 경로 형식의 콜백 추가 (/api/auth/callback/kakao)
     router.get(
       '/callback/kakao',
-      passport.authenticate('kakao', { 
-        successRedirect,
-        failureRedirect
-      })
+      (req, res, next) => {
+        log('카카오 콜백 호출됨 (API 경로): ' + req.originalUrl, 'auth');
+        passport.authenticate('kakao', { 
+          successRedirect,
+          failureRedirect
+        })(req, res, next);
+      }
     );
     
-    log('카카오 OAuth 콜백 URL: ' + authConfig.kakao.callbackURL, 'auth');
+    log('카카오 OAuth 콜백 URL 설정: ' + authConfig.kakao.callbackURL, 'auth');
   } else {
     // 카카오 로그인이 비활성화된 경우 임시 에러 처리
     router.get('/kakao', (req, res) => {

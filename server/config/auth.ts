@@ -3,8 +3,16 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // 기본 호스트 설정 (배포/개발 환경에 따라 다름)
 const defaultHost = isProduction 
-  ? (process.env.APP_URL || 'https://your-app-domain.replit.app') 
+  ? (process.env.APP_URL || 'https://jinsan-fortune.replit.app') 
   : 'http://localhost:5000';
+
+// 서버 시작 시 현재 호스트 정보 로깅
+const logHost = () => {
+  console.log(`현재 호스트: ${defaultHost}, 환경: ${isProduction ? '배포' : '개발'}`);
+  if (process.env.APP_URL) {
+    console.log(`APP_URL 환경 변수: ${process.env.APP_URL}`);
+  }
+};
 
 // 네이버 콜백 URL 설정
 const getNaverCallbackUrl = () => {
@@ -37,6 +45,9 @@ const getKakaoCallbackUrl = () => {
   // 3. 개발 환경에서는 /auth/kakao/callback 형식 사용
   return `${defaultHost}/auth/kakao/callback`;
 };
+
+// 호스트 정보 로깅
+logHost();
 
 // OAuth 제공자 설정 정보
 export const authConfig = {
