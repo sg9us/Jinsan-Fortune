@@ -43,6 +43,12 @@ export const supabase = createClient(
     auth: {
       autoRefreshToken: false,
       persistSession: false
+    },
+    global: {
+      headers: {
+        // RLS 정책을 위한 서비스 역할 헤더 추가
+        'Authorization': `Bearer ${supabaseKey}`
+      }
     }
   }
 );

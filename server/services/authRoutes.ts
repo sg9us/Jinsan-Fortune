@@ -436,16 +436,18 @@ export const createAuthRouter = () => {
       }
       
       try {
-        // Supabase Auth로 직접 사용자 인증
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
+        console.log(`[auth] 이메일 로그인 시도: ${email.substring(0, 3)}...`);
         
-        if (authError) {
+        // userService 통해 Supabase Auth 인증 요청
+        let user: SupabaseUser;
+        
+        try {
+          user = await userService.signInWithEmail(email, password);
+          console.log(`[auth] Supabase Auth로 로그인 성공: ${email.substring(0, 3)}...`);
+        } catch (authError: any) {
           console.log(`[auth] Supabase Auth 로그인 오류: ${authError.message}`);
           
-          if (authError.message.includes("Invalid login credentials")) {
+          if (authError.message.includes("이메일 또는 비밀번호가 올바르지 않습니다")) {
             return res.status(401).json({
               success: false,
               message: '이메일 또는 비밀번호가 올바르지 않습니다.'
@@ -453,68 +455,22 @@ export const createAuthRouter = () => {
           } else {
             return res.status(500).json({
               success: false,
-              message: '로그인 처리 중 오류가 발생했습니다.'
+              message: authError.message || '로그인 처리 중 오류가 발생했습니다.'
             });
           }
         }
         
-        if (!authData.user) {
-          console.log('[auth] Supabase Auth 응답에 사용자 정보가 없습니다');
+        if (!user) {
+          console.log('[auth] 로그인 후 사용자 정보를 받지 못했습니다');
           return res.status(500).json({
             success: false,
             message: '로그인 후 사용자 정보를 받지 못했습니다.'
           });
         }
         
-        // 인증 성공 시 DB에서 사용자 정보 가져오기
-        const user = await userService.getUserById(authData.user.id);
-        
-        if (!user) {
-          console.log(`[auth] Auth에는 있지만 DB에 없는 사용자: ${authData.user.id}`);
-          
-          // Auth에는 있지만 DB에 없는 경우 자동으로 사용자 생성
-          const nickname = authData.user.user_metadata?.nickname || email.split('@')[0];
-          
-          const newUser = await userService.createUser({
-            provider: 'email',
-            provider_id: email,
-            nickname: nickname,
-            email: email
-          });
-          
-          if (!newUser) {
-            return res.status(500).json({
-              success: false,
-              message: '사용자 정보 생성에 실패했습니다.'
-            });
-          }
-          
-          // 세션에 생성된 사용자 정보 저장
-          req.login(newUser, (err) => {
-            if (err) {
-              console.log(`[auth] 세션 저장 오류: ${err.message}`);
-              return res.status(500).json({
-                success: false,
-                message: '로그인 세션 생성 중 오류가 발생했습니다.'
-              });
-            }
-            
-            // 성공 응답
-            return res.json({
-              success: true,
-              message: '로그인에 성공했습니다.',
-              user: formatUserInfo(newUser)
-            });
-          });
-          return;
-        }
-        
-        // 마지막 로그인 시간 업데이트
-        const updatedUser = await userService.updateLastLoginTime(user.id);
-        const userToLogin = updatedUser || user;
-        
         // 세션에 사용자 정보 저장
-        req.login(userToLogin, (err) => {
+        console.log(`[auth] 세션에 사용자 정보 저장: ${user.nickname} (ID: ${user.id})`);
+        req.login(user, (err) => {
           if (err) {
             console.log(`[auth] 세션 저장 오류: ${err.message}`);
             return res.status(500).json({
@@ -524,10 +480,14 @@ export const createAuthRouter = () => {
           }
           
           // 성공 응답
-          res.json({
+          console.log(`[auth] 로그인 성공: ${user.nickname} (ID: ${user.id})`);
+          return res.json({
             success: true,
             message: '로그인에 성공했습니다.',
-            user: formatUserInfo(userToLogin)
+            user: formatUserInfo(user),
+            session: {
+              isAuthenticated: true
+            }
           });
         });
       } catch (error: any) {
