@@ -179,7 +179,7 @@ export const userService = {
   },
   
   // 이메일/비밀번호 로그인
-  async signInWithEmail(email: string, password: string): Promise<SupabaseUser | null> {
+  async signInWithEmail(email: string, password: string): Promise<SupabaseUser> {
     try {
       log(`이메일로 로그인 시도: ${email.substring(0, 3)}...`, 'supabase');
       
