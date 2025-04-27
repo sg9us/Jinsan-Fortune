@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { log } from '../vite';
+import { log } from '../utils/logger';
 
 // 환경 변수에서 Supabase URL과 API 키 가져오기
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -7,9 +7,9 @@ const supabaseKey = process.env.SUPABASE_API_KEY;
 
 // 환경 변수 확인 
 if (!supabaseUrl || !supabaseKey) {
-  log('Supabase URL 또는 API 키가 제공되지 않았습니다. 일부 기능이 비활성화됩니다.', 'supabase');
-  log('환경 변수를 확인하세요. SUPABASE_URL과 SUPABASE_API_KEY가 필요합니다.', 'supabase');
-  log('주의: SUPABASE_API_KEY는 anon 키가 아닌 service_role 키여야 합니다!', 'supabase');
+  log.warn('Supabase URL 또는 API 키가 제공되지 않았습니다. 일부 기능이 비활성화됩니다.', 'supabase');
+  log.warn('환경 변수를 확인하세요. SUPABASE_URL과 SUPABASE_API_KEY가 필요합니다.', 'supabase');
+  log.warn('주의: SUPABASE_API_KEY는 anon 키가 아닌 service_role 키여야 합니다!', 'supabase');
 } else {
   log(`Supabase 클라이언트가 초기화되었습니다. (URL: ${supabaseUrl.substring(0, 20)}...)`, 'supabase');
   

@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import passport from './passport';
 import { authConfig, successRedirect, failureRedirect } from '../config/auth';
 import { SupabaseUser, supabase, userService } from './supabase';
-import { log } from '../vite';
+import { log } from '../utils/logger';
 
 // 인증 확인 미들웨어
 export const isAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -417,7 +417,7 @@ export const createAuthRouter = () => {
     }
   });
   
-  // 이메일/비밀번호 로그인
+  // 이메일/비밀번호 로그인 - Supabase Auth 직접 사용
   router.post('/email/login', async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -431,20 +431,87 @@ export const createAuthRouter = () => {
       }
       
       try {
-        // Supabase Auth로 사용자 인증
-        const user = await userService.signInWithEmail(email, password);
+        // Supabase Auth로 직접 사용자 인증
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
         
-        if (!user) {
-          return res.status(401).json({
+        if (authError) {
+          log.error(`Supabase Auth 로그인 오류: ${authError.message}`, 'auth');
+          
+          if (authError.message.includes("Invalid login credentials")) {
+            return res.status(401).json({
+              success: false,
+              message: '이메일 또는 비밀번호가 올바르지 않습니다.'
+            });
+          } else {
+            return res.status(500).json({
+              success: false,
+              message: '로그인 처리 중 오류가 발생했습니다.'
+            });
+          }
+        }
+        
+        if (!authData.user) {
+          log.error('Supabase Auth 응답에 사용자 정보가 없습니다', 'auth');
+          return res.status(500).json({
             success: false,
-            message: '이메일 또는 비밀번호가 올바르지 않습니다.'
+            message: '로그인 후 사용자 정보를 받지 못했습니다.'
           });
         }
         
+        // 인증 성공 시 DB에서 사용자 정보 가져오기
+        const user = await userService.getUserById(authData.user.id);
+        
+        if (!user) {
+          log.warn(`Auth에는 있지만 DB에 없는 사용자: ${authData.user.id}`, 'auth');
+          
+          // Auth에는 있지만 DB에 없는 경우 자동으로 사용자 생성
+          const nickname = authData.user.user_metadata?.nickname || email.split('@')[0];
+          
+          const newUser = await userService.createUser({
+            provider: 'email',
+            provider_id: email,
+            nickname: nickname,
+            email: email
+          });
+          
+          if (!newUser) {
+            return res.status(500).json({
+              success: false,
+              message: '사용자 정보 생성에 실패했습니다.'
+            });
+          }
+          
+          // 세션에 생성된 사용자 정보 저장
+          req.login(newUser, (err) => {
+            if (err) {
+              log.error(`세션 저장 오류: ${err.message}`, 'auth');
+              return res.status(500).json({
+                success: false,
+                message: '로그인 세션 생성 중 오류가 발생했습니다.'
+              });
+            }
+            
+            // 성공 응답
+            return res.json({
+              success: true,
+              message: '로그인에 성공했습니다.',
+              user: formatUserInfo(newUser)
+            });
+          });
+          return;
+        }
+        
+        // 마지막 로그인 시간 업데이트
+        const updatedUser = await userService.updateLastLoginTime(user.id);
+        const userToLogin = updatedUser || user;
+        
         // 세션에 사용자 정보 저장
-        req.login(user, (err) => {
+        req.login(userToLogin, (err) => {
           if (err) {
-            log(`세션 저장 오류: ${err.message}`, 'auth');
+            log.error(`세션 저장 오류: ${err.message}`, 'auth');
             return res.status(500).json({
               success: false,
               message: '로그인 세션 생성 중 오류가 발생했습니다.'
@@ -455,29 +522,22 @@ export const createAuthRouter = () => {
           res.json({
             success: true,
             message: '로그인에 성공했습니다.',
-            user: formatUserInfo(user)
+            user: formatUserInfo(userToLogin)
           });
         });
       } catch (error: any) {
-        // Supabase 오류 처리
+        // 예외 처리
         const errorMessage = error instanceof Error ? error.message : String(error);
-        log(`로그인 처리 중 Supabase 오류: ${errorMessage}`, 'auth');
+        log.error(`Supabase 로그인 중 예외 발생: ${errorMessage}`, 'auth');
         
-        if (errorMessage.includes("비밀번호가 올바르지 않습니다")) {
-          return res.status(401).json({
-            success: false,
-            message: '이메일 또는 비밀번호가 올바르지 않습니다.'
-          });
-        } else {
-          return res.status(500).json({
-            success: false,
-            message: errorMessage || '로그인 처리 중 오류가 발생했습니다.'
-          });
-        }
+        return res.status(500).json({
+          success: false,
+          message: '로그인 처리 중 오류가 발생했습니다.'
+        });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      log(`이메일 로그인 처리 중 예외 발생: ${errorMessage}`, 'auth');
+      log.error(`이메일 로그인 처리 중 예외 발생: ${errorMessage}`, 'auth');
       
       res.status(500).json({
         success: false,
