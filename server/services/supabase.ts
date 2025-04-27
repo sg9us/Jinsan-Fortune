@@ -97,7 +97,6 @@ export interface SupabaseUser {
   age_range?: string | null;
   is_registered?: boolean;
   is_admin?: boolean;
-  is_social?: boolean;
   created_at: string;
   last_login_at: string;
 }
@@ -107,7 +106,7 @@ export const userService = {
   // 이메일/비밀번호 회원가입
   async signUpWithEmail(email: string, password: string, nickname: string): Promise<SupabaseUser> {
     try {
-      log(`이메일로 회원가입 시도: ${email.substring(0, 3)}...`, 'supabase');
+      console.log(`[supabase] 이메일로 회원가입 시도: ${email.substring(0, 3)}...`);
       
       // Supabase Auth로 회원가입 (이메일 중복 확인은 Supabase Auth에서 자동으로 수행함)
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -123,22 +122,25 @@ export const userService = {
       if (authError) {
         // 이메일 중복 등의 오류 로깅
         if (authError.message.includes("already exists")) {
-          log(`이미 가입된 이메일입니다: ${email.substring(0, 3)}...`, 'supabase');
+          console.log(`[supabase] 이미 가입된 이메일입니다: ${email.substring(0, 3)}...`);
           throw new Error("이미 가입된 이메일입니다");
         } else {
-          log(`Auth 회원가입 오류: ${authError.message}`, 'supabase');
+          console.log(`[supabase] Auth 회원가입 오류: ${authError.message}`);
           throw new Error(authError.message);
         }
       }
       
       if (!authData.user) {
-        log('Auth 회원가입 후 사용자 정보를 받지 못했습니다', 'supabase');
+        console.log('[supabase] Auth 회원가입 후 사용자 정보를 받지 못했습니다');
         throw new Error("사용자 정보를 받지 못했습니다");
       }
       
       const now = new Date().toISOString();
       
       // Supabase Auth 성공 시 users 테이블에 추가 프로필 정보 저장
+      // DB 스키마를 확인하고 불필요한 필드 제거
+      console.log(`[supabase] 새 사용자 생성 시도: ${email.substring(0, 3)}...`);
+      
       const { data, error } = await supabase
         .from('users')
         .insert([
@@ -149,8 +151,6 @@ export const userService = {
             nickname: nickname,
             email: email,
             is_admin: false,
-            is_social: false,
-            is_registered: false, // 기본 정보만 있으므로 false로 설정
             created_at: now,
             last_login_at: now
           }
@@ -159,26 +159,26 @@ export const userService = {
         .single();
       
       if (error) {
-        log(`사용자 DB 저장 오류: ${error.message}`, 'supabase');
+        console.log(`[supabase] 사용자 DB 저장 오류: ${error.message}`);
         
         // 사용자 정보 저장 실패 시 Supabase Auth에서 생성된 사용자 삭제 시도
         try {
           const { error: deleteError } = await supabase.auth.admin.deleteUser(authData.user.id);
           if (deleteError) {
-            log(`사용자 삭제 오류: ${deleteError.message}`, 'supabase');
+            console.log(`[supabase] 사용자 삭제 오류: ${deleteError.message}`);
           }
         } catch (deleteError) {
-          log(`사용자 삭제 중 예외 발생: ${deleteError}`, 'supabase');
+          console.log(`[supabase] 사용자 삭제 중 예외 발생: ${deleteError}`);
         }
         
         throw new Error("사용자 정보 저장에 실패했습니다");
       }
       
-      log(`이메일 회원가입 성공: ${email.substring(0, 3)}... (ID: ${data.id})`, 'supabase');
+      console.log(`[supabase] 이메일 회원가입 성공: ${email.substring(0, 3)}... (ID: ${data.id})`);
       return data as SupabaseUser;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      log(`이메일 회원가입 중 예외 발생: ${errorMessage}`, 'supabase');
+      console.log(`[supabase] 이메일 회원가입 중 예외 발생: ${errorMessage}`);
       throw error; // 오류를 상위로 전파하여 적절한 오류 메시지 표시
     }
   },
