@@ -2,10 +2,34 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
-import { log, printServerBanner } from "./utils/logger";
+import { printServerBanner } from "./utils/logger";
 import passport from "./services/passport";
 import { authConfig } from "./config/auth";
 import { createAuthRouter } from "./services/authRoutes";
+
+// 로그 함수 정의
+const log = {
+  info: (message: string, context?: string) => {
+    const prefix = context ? `[${context}]` : '';
+    console.log(`${prefix} ${message}`);
+  },
+  success: (message: string, context?: string) => {
+    const prefix = context ? `[${context}]` : '';
+    console.log(`${prefix} ${message}`);
+  },
+  warn: (message: string, context?: string) => {
+    const prefix = context ? `[${context}]` : '';
+    console.log(`${prefix} 경고: ${message}`);
+  },
+  error: (message: string, context?: string) => {
+    const prefix = context ? `[${context}]` : '';
+    console.error(`${prefix} 오류: ${message}`);
+  },
+  debug: (message: string, context?: string) => {
+    const prefix = context ? `[${context}]` : '';
+    console.log(`${prefix} 디버그: ${message}`);
+  }
+};
 
 // Supabase 환경 변수 초기화
 if (!process.env.SUPABASE_URL && process.env.SUPABASE_URL_saju) {
@@ -78,7 +102,7 @@ app.use((req, res, next) => {
     }
     
     if (err.originalError) {
-      log(`원본 오류: ${JSON.stringify(err.originalError)}`, 'express');
+      log.error(`원본 오류: ${JSON.stringify(err.originalError)}`, 'express');
     }
     
     if (status === 500) {

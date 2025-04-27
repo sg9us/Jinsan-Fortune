@@ -1,5 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-import { log } from '../utils/logger';
+
+// 로그 함수 정의
+const log = (message: string, context?: string) => {
+  const prefix = context ? `[${context}]` : '';
+  console.log(`${prefix} ${message}`);
+};
 
 // 환경 변수에서 Supabase URL과 API 키 가져오기
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -7,26 +12,26 @@ const supabaseKey = process.env.SUPABASE_API_KEY;
 
 // 환경 변수 확인 
 if (!supabaseUrl || !supabaseKey) {
-  log.warn('Supabase URL 또는 API 키가 제공되지 않았습니다. 일부 기능이 비활성화됩니다.', 'supabase');
-  log.warn('환경 변수를 확인하세요. SUPABASE_URL과 SUPABASE_API_KEY가 필요합니다.', 'supabase');
-  log.warn('주의: SUPABASE_API_KEY는 anon 키가 아닌 service_role 키여야 합니다!', 'supabase');
+  console.log('[supabase] 경고: Supabase URL 또는 API 키가 제공되지 않았습니다. 일부 기능이 비활성화됩니다.');
+  console.log('[supabase] 경고: 환경 변수를 확인하세요. SUPABASE_URL과 SUPABASE_API_KEY가 필요합니다.');
+  console.log('[supabase] 경고: 주의: SUPABASE_API_KEY는 anon 키가 아닌 service_role 키여야 합니다!');
 } else {
-  log(`Supabase 클라이언트가 초기화되었습니다. (URL: ${supabaseUrl.substring(0, 20)}...)`, 'supabase');
+  console.log(`[supabase] Supabase 클라이언트가 초기화되었습니다. (URL: ${supabaseUrl.substring(0, 20)}...)`);
   
   // 키가 service_role 키인지 확인 (간단한 휴리스틱)
   const isLikelyServiceRole = supabaseKey.includes('eyJ') && supabaseKey.length > 100;
   
   if (!isLikelyServiceRole) {
-    log('주의: SUPABASE_API_KEY가 service_role 키가 아닌 것 같습니다. RLS 정책을 우회하기 위해 service_role 키가 필요합니다.', 'supabase');
+    console.log('[supabase] 주의: SUPABASE_API_KEY가 service_role 키가 아닌 것 같습니다. RLS 정책을 우회하기 위해 service_role 키가 필요합니다.');
     // 키의 일부만 로그로 출력 (보안을 위해)
     if (supabaseKey && supabaseKey.length > 10) {
-      log(`현재 키 접두사: ${supabaseKey.substring(0, 5)}... (길이: ${supabaseKey.length})`, 'supabase');
+      console.log(`[supabase] 현재 키 접두사: ${supabaseKey.substring(0, 5)}... (길이: ${supabaseKey.length})`);
     }
-    log('service_role 키는 일반적으로 "eyJ"로 시작하는 긴 문자열입니다', 'supabase');
-    log('Supabase 대시보드 > 설정 > API에서 "service_role secret"을 확인하세요', 'supabase');
+    console.log('[supabase] service_role 키는 일반적으로 "eyJ"로 시작하는 긴 문자열입니다');
+    console.log('[supabase] Supabase 대시보드 > 설정 > API에서 "service_role secret"을 확인하세요');
   } else {
-    log('service_role 키로 Supabase 클라이언트를 초기화합니다. RLS 정책을 우회합니다.', 'supabase');
-    log(`키 접두사: ${supabaseKey.substring(0, 5)}... (길이: ${supabaseKey.length})`, 'supabase');
+    console.log('[supabase] service_role 키로 Supabase 클라이언트를 초기화합니다. RLS 정책을 우회합니다.');
+    console.log(`[supabase] 키 접두사: ${supabaseKey.substring(0, 5)}... (길이: ${supabaseKey.length})`);
   }
 }
 

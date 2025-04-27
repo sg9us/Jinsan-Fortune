@@ -2,7 +2,12 @@ import { Router, Request, Response } from 'express';
 import passport from './passport';
 import { authConfig, successRedirect, failureRedirect } from '../config/auth';
 import { SupabaseUser, supabase, userService } from './supabase';
-import { log } from '../utils/logger';
+
+// 로그 함수 정의
+const log = (message: string, context?: string) => {
+  const prefix = context ? `[${context}]` : '';
+  console.log(`${prefix} ${message}`);
+};
 
 // 인증 확인 미들웨어
 export const isAuthenticated = (req: Request, res: Response, next: Function) => {
