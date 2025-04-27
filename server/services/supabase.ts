@@ -219,6 +219,13 @@ export const userService = {
         const { data: userData } = await supabase.auth.admin.getUserById(authData.user.id);
         const nickname = userData?.user?.user_metadata?.nickname || email.split('@')[0];
         
+        // 새 사용자 생성할 정보
+        console.log(`[supabase] 새 사용자 생성 시도: ${JSON.stringify({
+          provider: 'email',
+          provider_id: email.substring(0, 3) + '...',
+          nickname: nickname
+        })}`);
+        
         // Auth에는 있지만 DB에 없는 경우 사용자 생성
         const now = new Date().toISOString();
         const { data, error } = await supabase
@@ -231,8 +238,6 @@ export const userService = {
               nickname: nickname,
               email: email,
               is_admin: false,
-              is_social: false,
-              // is_registered 필드가 없으므로 제거
               created_at: now,
               last_login_at: now
             }
@@ -268,6 +273,8 @@ export const userService = {
   async getUserByEmail(email: string): Promise<SupabaseUser | null> {
     if (!email) return null;
     
+    console.log(`[supabase] 이메일로 사용자 조회: ${email.substring(0, 3)}...`);
+    
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -276,16 +283,21 @@ export const userService = {
     
     if (error) {
       if (error.code !== 'PGRST116') { // 결과를 찾을 수 없음 오류 코드는 무시
-        log(`이메일로 사용자 조회 오류: ${error.message}`, 'supabase');
+        console.log(`[supabase] 이메일로 사용자 조회 오류: ${error.message}`);
+      } else {
+        console.log(`[supabase] 이메일 ${email.substring(0, 3)}...에 해당하는 사용자를 찾을 수 없습니다`);
       }
       return null;
     }
     
+    console.log(`[supabase] 이메일로 사용자 조회 성공: ${data.nickname} (ID: ${data.id})`);
     return data as SupabaseUser;
   },
   
   // 공급자 ID로 사용자 찾기
   async getUserByProviderId(provider: string, providerId: string): Promise<SupabaseUser | null> {
+    console.log(`[supabase] 공급자 ID로 사용자 조회: ${provider}/${providerId.substring(0, 3)}...`);
+    
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -295,11 +307,14 @@ export const userService = {
     
     if (error) {
       if (error.code !== 'PGRST116') { // 결과를 찾을 수 없음 오류 코드는 무시
-        log(`사용자 조회 오류: ${error.message}`, 'supabase');
+        console.log(`[supabase] 공급자 ID로 사용자 조회 오류: ${error.message}`);
+      } else {
+        console.log(`[supabase] 공급자 ID ${provider}/${providerId.substring(0, 3)}...에 해당하는 사용자를 찾을 수 없습니다`);
       }
       return null;
     }
     
+    console.log(`[supabase] 공급자 ID로 사용자 조회 성공: ${data.nickname} (ID: ${data.id})`);
     return data as SupabaseUser;
   },
   
@@ -314,7 +329,7 @@ export const userService = {
       // 중복 확인 - provider_id가 동일한 사용자가 있는지 확인
       const existingUser = await this.getUserByProviderId(userData.provider, userData.provider_id);
       if (existingUser) {
-        log(`이미 존재하는 사용자입니다: ${userData.provider} / ${userData.provider_id}`, 'supabase');
+        console.log(`[supabase] 이미 존재하는 사용자입니다: ${userData.provider} / ${userData.provider_id}`);
         return existingUser;
       }
       
@@ -325,14 +340,15 @@ export const userService = {
       const email = userData.email || null;
       
       // 로그 추가
-      log(`새 사용자 생성 시도: ${JSON.stringify({
+      console.log(`[supabase] 새 사용자 생성 시도: ${JSON.stringify({
         provider: userData.provider,
         provider_id: userData.provider_id,
         nickname: nickname,
         email: email ? email.substring(0, 3) + '...' : null
-      })}`, 'supabase');
+      })}`);
       
       // 서비스 역할 키로 RLS 정책 우회
+      // is_social 필드는 스키마에 없으므로 제거
       const { data, error } = await supabase
         .from('users')
         .insert([
@@ -342,7 +358,6 @@ export const userService = {
             nickname: nickname,
             email: email,
             is_admin: false,
-            is_social: true,
             created_at: now,
             last_login_at: now
           }
@@ -351,26 +366,26 @@ export const userService = {
         .single();
       
       if (error) {
-        log(`사용자 생성 오류: ${error.message} (코드: ${error.code})`, 'supabase');
+        console.log(`[supabase] 사용자 생성 오류: ${error.message} (코드: ${error.code})`);
         
         // 401 오류 세부 정보 로깅 (인증 관련)
         if (error.code === '401') {
-          log('401 인증 오류 - service_role 키를 확인하세요. anon 키가 아닌 service_role 키가 필요합니다!', 'supabase');
-          log('Supabase Project Settings -> API -> service_role 키를 사용하세요', 'supabase');
+          console.log('[supabase] 401 인증 오류 - service_role 키를 확인하세요. anon 키가 아닌 service_role 키가 필요합니다!');
+          console.log('[supabase] Supabase Project Settings -> API -> service_role 키를 사용하세요');
         }
         
         // 406 오류 세부 정보 로깅 (RLS 정책 관련)
         if (error.code === '406') {
-          log('406 오류 - RLS 정책이 삽입 작업을 차단했습니다', 'supabase');
-          log('다음 옵션 중 하나를 선택하세요:', 'supabase');
-          log('1. service_role 키를 사용하여 RLS를 우회하세요 (권장)', 'supabase');
-          log('2. Supabase에서 해당 테이블의 RLS 정책을 수정하세요', 'supabase');
-          log('3. Supabase에서 해당 테이블의 RLS를 잠시 비활성화하세요 (테스트용)', 'supabase');
+          console.log('[supabase] 406 오류 - RLS 정책이 삽입 작업을 차단했습니다');
+          console.log('[supabase] 다음 옵션 중 하나를 선택하세요:');
+          console.log('[supabase] 1. service_role 키를 사용하여 RLS를 우회하세요 (권장)');
+          console.log('[supabase] 2. Supabase에서 해당 테이블의 RLS 정책을 수정하세요');
+          console.log('[supabase] 3. Supabase에서 해당 테이블의 RLS를 잠시 비활성화하세요 (테스트용)');
         }
         
         // 중복 키 (이미 존재하는 사용자)
         if (error.code === 'PGRST409' || error.code === '23505') {
-          log('이미 존재하는 사용자 - 다시 조회 시도', 'supabase');
+          console.log('[supabase] 이미 존재하는 사용자 - 다시 조회 시도');
           const existingUser = await this.getUserByProviderId(userData.provider, userData.provider_id);
           if (existingUser) {
             return existingUser;
@@ -380,11 +395,11 @@ export const userService = {
         return null;
       }
       
-      log(`사용자 생성 성공: ${data.nickname} (ID: ${data.id})`, 'supabase');
+      console.log(`[supabase] 사용자 생성 성공: ${data.nickname} (ID: ${data.id})`);
       return data as SupabaseUser;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      log(`사용자 생성 중 예외 발생: ${errorMessage}`, 'supabase');
+      console.log(`[supabase] 사용자 생성 중 예외 발생: ${errorMessage}`);
       return null;
     }
   },
@@ -392,7 +407,7 @@ export const userService = {
   // 마지막 로그인 시간 업데이트
   async updateLastLoginTime(userId: string): Promise<SupabaseUser | null> {
     try {
-      log(`사용자 로그인 시간 업데이트 시도: ID ${userId}`, 'supabase');
+      console.log(`[supabase] 사용자 로그인 시간 업데이트 시도: ID ${userId}`);
       const now = new Date().toISOString();
       
       const { data, error } = await supabase
@@ -405,11 +420,11 @@ export const userService = {
         .single();
       
       if (error) {
-        log(`사용자 로그인 시간 업데이트 오류: ${error.message} (코드: ${error.code})`, 'supabase');
+        console.log(`[supabase] 사용자 로그인 시간 업데이트 오류: ${error.message} (코드: ${error.code})`);
         
         // 사용자를 찾을 수 없는 경우 다시 조회
         if (error.code === 'PGRST116') {
-          log(`사용자를 찾을 수 없음 - ID로 다시 조회 시도: ${userId}`, 'supabase');
+          console.log(`[supabase] 사용자를 찾을 수 없음 - ID로 다시 조회 시도: ${userId}`);
           const user = await this.getUserById(userId);
           return user;
         }
@@ -417,11 +432,11 @@ export const userService = {
         return null;
       }
       
-      log(`사용자 로그인 시간 업데이트 성공: ${data.nickname} (ID: ${data.id})`, 'supabase');
+      console.log(`[supabase] 사용자 로그인 시간 업데이트 성공: ${data.nickname} (ID: ${data.id})`);
       return data as SupabaseUser;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      log(`사용자 로그인 시간 업데이트 중 예외 발생: ${errorMessage}`, 'supabase');
+      console.log(`[supabase] 사용자 로그인 시간 업데이트 중 예외 발생: ${errorMessage}`);
       return null;
     }
   },
@@ -430,11 +445,11 @@ export const userService = {
   async getUserById(userId: string): Promise<SupabaseUser | null> {
     try {
       if (!userId) {
-        log('유효하지 않은 사용자 ID: 빈 문자열 또는 undefined', 'supabase');
+        console.log('[supabase] 유효하지 않은 사용자 ID: 빈 문자열 또는 undefined');
         return null;
       }
       
-      log(`ID로 사용자 조회: ${userId}`, 'supabase');
+      console.log(`[supabase] ID로 사용자 조회: ${userId}`);
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -443,18 +458,18 @@ export const userService = {
       
       if (error) {
         if (error.code !== 'PGRST116') { // 결과 없음 에러는 조용히 처리
-          log(`사용자 ID 조회 오류: ${error.message} (코드: ${error.code})`, 'supabase');
+          console.log(`[supabase] 사용자 ID 조회 오류: ${error.message} (코드: ${error.code})`);
         } else {
-          log(`ID ${userId}에 해당하는 사용자를 찾을 수 없습니다`, 'supabase');
+          console.log(`[supabase] ID ${userId}에 해당하는 사용자를 찾을 수 없습니다`);
         }
         return null;
       }
       
-      log(`사용자 조회 성공: ${data.nickname} (ID: ${data.id})`, 'supabase');
+      console.log(`[supabase] 사용자 조회 성공: ${data.nickname} (ID: ${data.id})`);
       return data as SupabaseUser;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      log(`사용자 ID 조회 중 예외 발생: ${errorMessage}`, 'supabase');
+      console.log(`[supabase] 사용자 ID 조회 중 예외 발생: ${errorMessage}`);
       return null;
     }
   }
