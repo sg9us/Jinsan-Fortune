@@ -104,32 +104,36 @@ export const userService = {
     try {
       log(`이메일로 회원가입 시도: ${email.substring(0, 3)}...`, 'supabase');
       
-      // 이메일 중복 확인
-      const existingUser = await this.getUserByEmail(email);
-      if (existingUser) {
-        log(`이미 가입된 이메일입니다: ${email.substring(0, 3)}...`, 'supabase');
-        return null;
-      }
-      
-      // Supabase Auth로 회원가입
+      // Supabase Auth로 회원가입 (이메일 중복 확인은 Supabase Auth에서 자동으로 수행함)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            nickname: nickname
+          }
+        }
       });
       
       if (authError) {
-        log(`Auth 회원가입 오류: ${authError.message}`, 'supabase');
-        return null;
+        // 이메일 중복 등의 오류 로깅
+        if (authError.message.includes("already exists")) {
+          log(`이미 가입된 이메일입니다: ${email.substring(0, 3)}...`, 'supabase');
+          throw new Error("이미 가입된 이메일입니다");
+        } else {
+          log(`Auth 회원가입 오류: ${authError.message}`, 'supabase');
+          throw new Error(authError.message);
+        }
       }
       
       if (!authData.user) {
         log('Auth 회원가입 후 사용자 정보를 받지 못했습니다', 'supabase');
-        return null;
+        throw new Error("사용자 정보를 받지 못했습니다");
       }
       
       const now = new Date().toISOString();
       
-      // users 테이블에 사용자 추가
+      // Supabase Auth 성공 시 users 테이블에 추가 프로필 정보 저장
       const { data, error } = await supabase
         .from('users')
         .insert([
@@ -141,6 +145,7 @@ export const userService = {
             email: email,
             is_admin: false,
             is_social: false,
+            is_registered: false, // 기본 정보만 있으므로 false로 설정
             created_at: now,
             last_login_at: now
           }
@@ -150,7 +155,18 @@ export const userService = {
       
       if (error) {
         log(`사용자 DB 저장 오류: ${error.message}`, 'supabase');
-        return null;
+        
+        // 사용자 정보 저장 실패 시 Supabase Auth에서 생성된 사용자 삭제 시도
+        try {
+          const { error: deleteError } = await supabase.auth.admin.deleteUser(authData.user.id);
+          if (deleteError) {
+            log(`사용자 삭제 오류: ${deleteError.message}`, 'supabase');
+          }
+        } catch (deleteError) {
+          log(`사용자 삭제 중 예외 발생: ${deleteError}`, 'supabase');
+        }
+        
+        throw new Error("사용자 정보 저장에 실패했습니다");
       }
       
       log(`이메일 회원가입 성공: ${email.substring(0, 3)}... (ID: ${data.id})`, 'supabase');
@@ -158,7 +174,7 @@ export const userService = {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log(`이메일 회원가입 중 예외 발생: ${errorMessage}`, 'supabase');
-      return null;
+      throw error; // 오류를 상위로 전파하여 적절한 오류 메시지 표시
     }
   },
   
@@ -174,13 +190,18 @@ export const userService = {
       });
       
       if (authError) {
-        log(`Auth 로그인 오류: ${authError.message}`, 'supabase');
-        return null;
+        if (authError.message.includes("Invalid login credentials")) {
+          log(`잘못된 로그인 정보: ${email.substring(0, 3)}...`, 'supabase');
+          throw new Error("이메일 또는 비밀번호가 올바르지 않습니다");
+        } else {
+          log(`Auth 로그인 오류: ${authError.message}`, 'supabase');
+          throw new Error(authError.message);
+        }
       }
       
       if (!authData.user) {
         log('Auth 로그인 후 사용자 정보를 받지 못했습니다', 'supabase');
-        return null;
+        throw new Error("로그인 후 사용자 정보를 가져오지 못했습니다");
       }
       
       // DB에서 사용자 정보 가져오기
@@ -188,6 +209,10 @@ export const userService = {
       
       if (!user) {
         log(`Auth에는 있지만 DB에 없는 사용자: ${authData.user.id}`, 'supabase');
+        
+        // Supabase Auth에서 사용자 메타데이터 가져오기
+        const { data: userData } = await supabase.auth.admin.getUserById(authData.user.id);
+        const nickname = userData?.user?.user_metadata?.nickname || email.split('@')[0];
         
         // Auth에는 있지만 DB에 없는 경우 사용자 생성
         const now = new Date().toISOString();
@@ -198,10 +223,11 @@ export const userService = {
               id: authData.user.id,
               provider: 'email',
               provider_id: email,
-              nickname: email.split('@')[0], // 이메일 아이디 부분을 닉네임으로 사용
+              nickname: nickname,
               email: email,
               is_admin: false,
               is_social: false,
+              is_registered: false,
               created_at: now,
               last_login_at: now
             }
@@ -211,21 +237,25 @@ export const userService = {
         
         if (error) {
           log(`로그인 중 사용자 자동 생성 오류: ${error.message}`, 'supabase');
-          return null;
+          throw new Error("사용자 정보 생성에 실패했습니다");
         }
         
+        log(`사용자 자동 생성 성공: ${email.substring(0, 3)}... (ID: ${data.id})`, 'supabase');
         return data as SupabaseUser;
       }
       
       // 마지막 로그인 시간 업데이트
       const updatedUser = await this.updateLastLoginTime(user.id);
+      if (!updatedUser) {
+        throw new Error("로그인 시간 업데이트에 실패했습니다");
+      }
       
       log(`이메일 로그인 성공: ${email.substring(0, 3)}... (ID: ${user.id})`, 'supabase');
       return updatedUser;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       log(`이메일 로그인 중 예외 발생: ${errorMessage}`, 'supabase');
-      return null;
+      throw error; // 오류를 상위로 전파
     }
   },
   
