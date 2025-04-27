@@ -181,7 +181,7 @@ export const userService = {
   // 이메일/비밀번호 로그인
   async signInWithEmail(email: string, password: string): Promise<SupabaseUser> {
     try {
-      log(`이메일로 로그인 시도: ${email.substring(0, 3)}...`, 'supabase');
+      log.info(`이메일로 로그인 시도: ${email.substring(0, 3)}...`, 'supabase');
       
       // Supabase Auth로 로그인
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -191,7 +191,7 @@ export const userService = {
       
       if (authError) {
         if (authError.message.includes("Invalid login credentials")) {
-          log(`잘못된 로그인 정보: ${email.substring(0, 3)}...`, 'supabase');
+          log.info(`잘못된 로그인 정보: ${email.substring(0, 3)}...`, 'supabase');
           throw new Error("이메일 또는 비밀번호가 올바르지 않습니다");
         } else {
           log(`Auth 로그인 오류: ${authError.message}`, 'supabase');
@@ -227,7 +227,7 @@ export const userService = {
               email: email,
               is_admin: false,
               is_social: false,
-              is_registered: false,
+              // is_registered 필드가 없으므로 제거
               created_at: now,
               last_login_at: now
             }

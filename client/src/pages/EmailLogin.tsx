@@ -57,7 +57,7 @@ export default function EmailLogin() {
     setIsLoading(true);
     
     try {
-      const response = await apiRequest("/api/auth/email/login", {
+      const response = await fetch("/api/auth/email/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -67,10 +67,9 @@ export default function EmailLogin() {
           password
         })
       });
-      
-      const result = response as any;
-      
-      if (result.success) {
+
+      if (response.ok) {
+        const result = await response.json();
         toast({
           title: "로그인 성공",
           description: "환영합니다!",
@@ -78,9 +77,20 @@ export default function EmailLogin() {
         
         navigate("/");
       } else {
+        let errorMessage = "로그인 중 오류가 발생했습니다";
+        
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (e) {
+          // JSON 파싱 오류를 무시하고 기본 메시지 사용
+        }
+        
         toast({
           title: "로그인 실패",
-          description: result.message || "로그인 중 오류가 발생했습니다",
+          description: errorMessage,
           variant: "destructive"
         });
       }
