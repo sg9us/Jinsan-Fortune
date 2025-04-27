@@ -10,12 +10,12 @@ import { createAuthRouter } from "./services/authRoutes";
 // Supabase 환경 변수 초기화
 if (!process.env.SUPABASE_URL && process.env.SUPABASE_URL_saju) {
   process.env.SUPABASE_URL = process.env.SUPABASE_URL_saju;
-  log('Supabase URL 환경 변수가 설정되었습니다.', 'supabase');
+  log.info('Supabase URL 환경 변수가 설정되었습니다.', 'supabase');
 }
 
 if (!process.env.SUPABASE_API_KEY && process.env.SUPABASE_API_KEY_saju) {
   process.env.SUPABASE_API_KEY = process.env.SUPABASE_API_KEY_saju;
-  log('Supabase API 키 환경 변수가 설정되었습니다.', 'supabase');
+  log.info('Supabase API 키 환경 변수가 설정되었습니다.', 'supabase');
 }
 
 const app = express();
@@ -57,7 +57,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      log.info(logLine, 'express');
     }
   });
 
@@ -71,10 +71,10 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    log(`서버 오류 발생: ${status} - ${message}`, 'express');
+    log.error(`서버 오류 발생: ${status} - ${message}`, 'express');
     
     if (err.stack) {
-      log(`오류 스택: ${err.stack}`, 'express');
+      log.error(`오류 스택: ${err.stack}`, 'express');
     }
     
     if (err.originalError) {
