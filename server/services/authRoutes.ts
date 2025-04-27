@@ -438,7 +438,7 @@ export const createAuthRouter = () => {
         });
         
         if (authError) {
-          log.error(`Supabase Auth 로그인 오류: ${authError.message}`, 'auth');
+          console.log(`[auth] Supabase Auth 로그인 오류: ${authError.message}`);
           
           if (authError.message.includes("Invalid login credentials")) {
             return res.status(401).json({
@@ -454,7 +454,7 @@ export const createAuthRouter = () => {
         }
         
         if (!authData.user) {
-          log.error('Supabase Auth 응답에 사용자 정보가 없습니다', 'auth');
+          console.log('[auth] Supabase Auth 응답에 사용자 정보가 없습니다');
           return res.status(500).json({
             success: false,
             message: '로그인 후 사용자 정보를 받지 못했습니다.'
@@ -465,7 +465,7 @@ export const createAuthRouter = () => {
         const user = await userService.getUserById(authData.user.id);
         
         if (!user) {
-          log.warn(`Auth에는 있지만 DB에 없는 사용자: ${authData.user.id}`, 'auth');
+          console.log(`[auth] Auth에는 있지만 DB에 없는 사용자: ${authData.user.id}`);
           
           // Auth에는 있지만 DB에 없는 경우 자동으로 사용자 생성
           const nickname = authData.user.user_metadata?.nickname || email.split('@')[0];
@@ -487,7 +487,7 @@ export const createAuthRouter = () => {
           // 세션에 생성된 사용자 정보 저장
           req.login(newUser, (err) => {
             if (err) {
-              log.error(`세션 저장 오류: ${err.message}`, 'auth');
+              console.log(`[auth] 세션 저장 오류: ${err.message}`);
               return res.status(500).json({
                 success: false,
                 message: '로그인 세션 생성 중 오류가 발생했습니다.'
@@ -511,7 +511,7 @@ export const createAuthRouter = () => {
         // 세션에 사용자 정보 저장
         req.login(userToLogin, (err) => {
           if (err) {
-            log.error(`세션 저장 오류: ${err.message}`, 'auth');
+            console.log(`[auth] 세션 저장 오류: ${err.message}`);
             return res.status(500).json({
               success: false,
               message: '로그인 세션 생성 중 오류가 발생했습니다.'
@@ -528,7 +528,7 @@ export const createAuthRouter = () => {
       } catch (error: any) {
         // 예외 처리
         const errorMessage = error instanceof Error ? error.message : String(error);
-        log.error(`Supabase 로그인 중 예외 발생: ${errorMessage}`, 'auth');
+        console.log(`[auth] Supabase 로그인 중 예외 발생: ${errorMessage}`);
         
         return res.status(500).json({
           success: false,
@@ -537,7 +537,7 @@ export const createAuthRouter = () => {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      log.error(`이메일 로그인 처리 중 예외 발생: ${errorMessage}`, 'auth');
+      console.log(`[auth] 이메일 로그인 처리 중 예외 발생: ${errorMessage}`);
       
       res.status(500).json({
         success: false,
@@ -547,10 +547,10 @@ export const createAuthRouter = () => {
   });
   
   // 활성화된 제공자 로깅
-  log(`활성화된 인증 제공자: ${Object.entries(providers)
+  console.log(`[auth] 활성화된 인증 제공자: ${Object.entries(providers)
     .filter(([_, active]) => active)
     .map(([name]) => name)
-    .join(', ') || '없음'}`, 'auth');
+    .join(', ') || '없음'}`);
 
   return router;
 };

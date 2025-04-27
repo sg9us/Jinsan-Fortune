@@ -181,7 +181,7 @@ export const userService = {
   // 이메일/비밀번호 로그인
   async signInWithEmail(email: string, password: string): Promise<SupabaseUser> {
     try {
-      log.info(`이메일로 로그인 시도: ${email.substring(0, 3)}...`, 'supabase');
+      console.log(`[supabase] 이메일로 로그인 시도: ${email.substring(0, 3)}...`);
       
       // Supabase Auth로 로그인
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -191,16 +191,16 @@ export const userService = {
       
       if (authError) {
         if (authError.message.includes("Invalid login credentials")) {
-          log.info(`잘못된 로그인 정보: ${email.substring(0, 3)}...`, 'supabase');
+          console.log(`[supabase] 잘못된 로그인 정보: ${email.substring(0, 3)}...`);
           throw new Error("이메일 또는 비밀번호가 올바르지 않습니다");
         } else {
-          log(`Auth 로그인 오류: ${authError.message}`, 'supabase');
+          console.log(`[supabase] Auth 로그인 오류: ${authError.message}`);
           throw new Error(authError.message);
         }
       }
       
       if (!authData.user) {
-        log('Auth 로그인 후 사용자 정보를 받지 못했습니다', 'supabase');
+        console.log(`[supabase] Auth 로그인 후 사용자 정보를 받지 못했습니다`);
         throw new Error("로그인 후 사용자 정보를 가져오지 못했습니다");
       }
       
@@ -208,7 +208,7 @@ export const userService = {
       const user = await this.getUserById(authData.user.id);
       
       if (!user) {
-        log(`Auth에는 있지만 DB에 없는 사용자: ${authData.user.id}`, 'supabase');
+        console.log(`[supabase] Auth에는 있지만 DB에 없는 사용자: ${authData.user.id}`);
         
         // Supabase Auth에서 사용자 메타데이터 가져오기
         const { data: userData } = await supabase.auth.admin.getUserById(authData.user.id);
@@ -236,11 +236,11 @@ export const userService = {
           .single();
         
         if (error) {
-          log(`로그인 중 사용자 자동 생성 오류: ${error.message}`, 'supabase');
+          console.log(`[supabase] 로그인 중 사용자 자동 생성 오류: ${error.message}`);
           throw new Error("사용자 정보 생성에 실패했습니다");
         }
         
-        log(`사용자 자동 생성 성공: ${email.substring(0, 3)}... (ID: ${data.id})`, 'supabase');
+        console.log(`[supabase] 사용자 자동 생성 성공: ${email.substring(0, 3)}... (ID: ${data.id})`);
         return data as SupabaseUser;
       }
       
@@ -250,11 +250,11 @@ export const userService = {
         throw new Error("로그인 시간 업데이트에 실패했습니다");
       }
       
-      log(`이메일 로그인 성공: ${email.substring(0, 3)}... (ID: ${user.id})`, 'supabase');
+      console.log(`[supabase] 이메일 로그인 성공: ${email.substring(0, 3)}... (ID: ${user.id})`);
       return updatedUser;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      log(`이메일 로그인 중 예외 발생: ${errorMessage}`, 'supabase');
+      console.log(`[supabase] 이메일 로그인 중 예외 발생: ${errorMessage}`);
       throw error; // 오류를 상위로 전파
     }
   },
