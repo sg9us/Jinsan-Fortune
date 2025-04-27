@@ -100,7 +100,7 @@ export interface SupabaseUser {
 // Supabase 사용자 서비스
 export const userService = {
   // 이메일/비밀번호 회원가입
-  async signUpWithEmail(email: string, password: string, nickname: string): Promise<SupabaseUser | null> {
+  async signUpWithEmail(email: string, password: string, nickname: string): Promise<SupabaseUser> {
     try {
       log(`이메일로 회원가입 시도: ${email.substring(0, 3)}...`, 'supabase');
       
@@ -349,13 +349,13 @@ export const userService = {
         log(`사용자 생성 오류: ${error.message} (코드: ${error.code})`, 'supabase');
         
         // 401 오류 세부 정보 로깅 (인증 관련)
-        if (error.code === '401' || error.status === 401) {
+        if (error.code === '401') {
           log('401 인증 오류 - service_role 키를 확인하세요. anon 키가 아닌 service_role 키가 필요합니다!', 'supabase');
           log('Supabase Project Settings -> API -> service_role 키를 사용하세요', 'supabase');
         }
         
         // 406 오류 세부 정보 로깅 (RLS 정책 관련)
-        if (error.code === '406' || error.status === 406) {
+        if (error.code === '406') {
           log('406 오류 - RLS 정책이 삽입 작업을 차단했습니다', 'supabase');
           log('다음 옵션 중 하나를 선택하세요:', 'supabase');
           log('1. service_role 키를 사용하여 RLS를 우회하세요 (권장)', 'supabase');
